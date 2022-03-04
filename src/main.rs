@@ -18,6 +18,11 @@ async fn index(req: HttpRequest) -> actix_web::Result<HttpResponse> {
         .body("<h1>Hello, world!</h1>"))
 }
 
+#[get("/blog/{date}/{slug}")]
+async fn blog(req: HttpRequest) -> actix_web::Result<HttpResponse> {
+    unimplemented!()
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     HttpServer::new(|| App::new().service(index))
