@@ -4,9 +4,7 @@ This is my submission for Xe's blog challenge 2022 :)
 
 I want to learn Rust, and I've already been writing a HTML templator/SSG for my partner's [website](https://gracebobber.com/), which I wrote and maintain. I feel like this has been a great project to learn Rust, so I want to jump ath the opportunity to do this challenge, since I think I'll get a lot out of it!
 
-## Plans
-- Host on netlify, since I probably want to keep using that.
-- Flake install and automatic build via GH push?
+I will be keeping a [journal of my thoughts here](./JOURNAL.md).
 
 ## TODO
 - [ ] An abstract "Post" datatype with a title, publication date, a "URL slug" and content in plain text
