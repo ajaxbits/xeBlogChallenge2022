@@ -8,3 +8,7 @@
 - Thinking in broad strokes:
     - Host on netlify, since I probably want to keep using that.
     - Flake install and automatic build via GH push?
+- Scared to to SQLite for some reason. Like for some reason I feel like there's a "better" way to do this?? But I've never worked with SQL before at all, so the whole thing is a little foreign to me, ansd I'm like scared of state??? Like databases feel like mutable state, that I don't want? I don't know. I should look into it. But like can I do this in a different way?
+    - I feel like I'd want to uperate on markdown file checked into a git repo, honestly.
+- Actually, I think I'm going to go with something like [this](https://github.com/actix/examples/blob/master/basics/basics/src/main.rs)
+- Going with actix because it's #1 on [lib.rs](https://lib.rs) for web servers lol

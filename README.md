@@ -7,7 +7,7 @@ I want to learn Rust, and I've already been writing a HTML templator/SSG for my 
 I will be keeping a [journal of my thoughts here](./JOURNAL.md).
 
 ## TODO
-- [ ] An abstract "Post" datatype with a title, publication date, a "URL slug" and content in plain text
+- [X] An abstract "Post" datatype with a title, publication date, a "URL slug" and content in plain text
 - [ ] A home page at / that describes yourself to the world
 - [ ] A list of blog posts at /blog
 - [ ] Individual blog posts at /blog/{date}/{slug}
@@ -30,7 +30,7 @@ I will be keeping a [journal of my thoughts here](./JOURNAL.md).
 - [ ] Pagination of post lists
 
 ### Xe's recommended steps from the blog
-- [ ] Serve a static file at / that contains `<h1>Hello, world!</h1>`
+- [X] Serve a static file at / that contains `<h1>Hello, world!</h1>`
 - [ ] Create a SQLite connection and the posts table
 - [ ] Insert a post into your database by hand with the sqlite3 console
 - [ ] Wire up a /blog/{date}/{slug} route to show that post
