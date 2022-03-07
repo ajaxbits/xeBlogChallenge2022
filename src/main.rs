@@ -1,14 +1,12 @@
-use std::{
-    fs::{self, File},
-    io::Read,
-    path::Path,
-};
-
-use actix_web::{get, http::header::ContentType, App, HttpRequest, HttpResponse, HttpServer};
-use axum::http::StatusCode;
-
 mod datatypes;
 mod templates;
+use actix_web::{
+    get,
+    http::{header::ContentType, StatusCode},
+    post, test, web, App, HttpRequest, HttpResponse, HttpServer,
+};
+use datatypes::Post;
+use std::{fs, path::Path};
 
 const INDEX: &str = "static/index.html";
 const CONTACT: &str = "static/contact.html";
@@ -20,15 +18,44 @@ fn render_static_html(file_name: &str) -> String {
     body
 }
 #[get("/")]
-async fn index(req: HttpRequest) -> actix_web::Result<HttpResponse> {
+async fn index(req: HttpRequest) -> HttpResponse {
+    HttpResponse::build(StatusCode::OK)
+        .content_type(ContentType::plaintext())
+        .body(render_static_html(INDEX))
+}
+
+#[get("/admin")]
+async fn admin(req: HttpRequest) -> actix_web::Result<HttpResponse> {
+    unimplemented!()
+}
+
+#[get("/blog")]
+async fn blog() -> actix_web::Result<HttpResponse> {
     Ok(HttpResponse::build(StatusCode::OK)
         .content_type(ContentType::plaintext())
-        .body(render_static_html(INDEX)))
+        .body("<h1>This is the blog index</h1>"))
+}
+
+fn generate_blog_post(post: Post) -> String {
+    format!(
+        "<h1>{title}</h1><h2>{date}<h2><p>{content}</p>",
+        title = post.title,
+        date = post.date,
+        content = post.content
+    )
 }
 
 #[get("/blog/{date}/{slug}")]
-async fn blog(req: HttpRequest) -> actix_web::Result<HttpResponse> {
-    unimplemented!()
+async fn render_blog_post(req: HttpRequest) -> actix_web::Result<HttpResponse> {
+    let test_post = Post {
+        title: "Hello".to_string(),
+        date: chrono::NaiveDate::from_ymd(2022, 01, 01),
+        slug: "/test".to_string(),
+        content: "<h1>This is a test blog post</h1>".to_string(),
+    };
+    Ok(HttpResponse::build(StatusCode::OK)
+        .content_type(ContentType::plaintext())
+        .body(generate_blog_post(test_post)))
 }
 
 #[get("/contact")]
@@ -44,6 +71,8 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .service(index)
             .service(contact)
+            .service(blog)
+            .service(render_blog_post)
     })
     .bind(("127.0.0.1", 8080))?
     .run()
