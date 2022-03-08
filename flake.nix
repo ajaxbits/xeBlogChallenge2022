@@ -29,6 +29,8 @@
               pkgconfig
               cargo-edit
               cargo-watch
+
+              sqlite
             ];
         };
       });
