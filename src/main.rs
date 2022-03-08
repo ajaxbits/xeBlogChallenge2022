@@ -3,9 +3,10 @@ mod templates;
 use actix_web::{
     get,
     http::{header::ContentType, StatusCode},
-    post, test, web, App, HttpRequest, HttpResponse, HttpServer,
+    post, test, web, App, HttpRequest, HttpResponse, HttpServer, Responder,
 };
 use datatypes::Post;
+use serde::Deserialize;
 use std::{fs, path::Path};
 
 const INDEX: &str = "static/index.html";
@@ -65,6 +66,15 @@ async fn contact(req: HttpRequest) -> actix_web::Result<HttpResponse> {
         .body(render_static_html(CONTACT)))
 }
 
+#[derive(Deserialize)]
+struct Register {
+    username: String,
+    country: String,
+}
+async fn register(form: web::Json<Register>) -> impl Responder {
+    format!("hello {} from {}", form.username, form.country)
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
@@ -73,6 +83,8 @@ async fn main() -> std::io::Result<()> {
             .service(contact)
             .service(blog)
             .service(render_blog_post)
+            .route("/hello", web::get().to(|| async { "Hello World!" }))
+            .route("/register", web::post().to(register))
     })
     .bind(("127.0.0.1", 8080))?
     .run()
