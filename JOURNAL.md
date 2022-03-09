@@ -25,3 +25,19 @@
     - However, I now have to have a place to _run the server_. It doesn't seem like I can use a Netlify for this project anymore, since `actix_web` doesn't output files. At least I don't think it does right now. 
     - I want to keep using actix, since I've never worked with this kind of server before, and would love the learning.
     - However, I will need to see if it can output files. Since I'm not opposed to spinning up a server of a FaaS thing to host the blog, but that's way more expensive than _free_, which something like Neflify can provide.
+
+## 2022-03-07
+- Going to work with the `Post` type for now, just assuming that I'll get a SQLite connection going in the future.
+
+## 2022-03-08
+- No notes recently, since we're in the hard part of this thing
+- Just set up the SQLite dateabse. Easier than I thought
+    - I hope it's ok to check the db into git. Like I hope that's what one "does."
+- Ok, now I have to set up this route to work...
+    - Going to follow this [example](https://github.com/actix/examples/blob/master/databases/sqlite/src/db.rs) from the `actix_web` repo
+
+## 2022-03-09
+- Ok, started getting Rust to talk to the DB. 
+    - Started with `rusqlite` and got it to be able to get a vec of posts. 
+    - However, I wonder if I want to render these routes dynamically? Like do I want actix to handle this??
+    - Going to switch to the example's way, with a connection pool and all of that, since it seems better. More complicated, but better.

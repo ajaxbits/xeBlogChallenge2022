@@ -31,11 +31,11 @@ I will be keeping a [journal of my thoughts here](./JOURNAL.md).
 
 ### Xe's recommended steps from the blog
 - [X] Serve a static file at / that contains `<h1>Hello, world!</h1>`
-- [ ] Create a SQLite connection and the posts table
-- [ ] Insert a post into your database by hand with the sqlite3 console
-- [ ] Wire up a /blog/{date}/{slug} route to show that post
+- [X] Create a SQLite connection and the posts table
+- [X] Insert a post into your database by hand with the sqlite3 console
+- [X] Wire up a /blog/{date}/{slug} route to show that post
 - [ ] Wire up /blog to show all the posts in the database
-- [ ] Make static pages for / and /contact
+- [-] Make static pages for / and /contact
 - [ ] Choose a templating language and create a base template
 - [ ] Edit all your routes to use that base template
 - [ ] Create the admin login page and a POST route to receive the HTML form and check the username/password against something in the SQLite database, creating a session for the admin panel

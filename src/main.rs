@@ -1,11 +1,11 @@
-mod datatypes;
+mod db;
 mod templates;
 use actix_web::{
     get,
     http::{header::ContentType, StatusCode},
     post, test, web, App, HttpRequest, HttpResponse, HttpServer, Responder,
 };
-use datatypes::Post;
+use db::Post;
 use serde::Deserialize;
 use std::{fs, path::Path};
 
@@ -48,15 +48,11 @@ fn generate_blog_post(post: Post) -> String {
 
 #[get("/blog/{date}/{slug}")]
 async fn render_blog_post(req: HttpRequest) -> actix_web::Result<HttpResponse> {
-    let test_post = Post {
-        title: "Hello".to_string(),
-        date: chrono::NaiveDate::from_ymd(2022, 01, 01),
-        slug: "/test".to_string(),
-        content: "<h1>This is a test blog post</h1>".to_string(),
-    };
+    let posts = db::get_posts().expect("failed to get posts");
+    let test_post = &posts[0];
     Ok(HttpResponse::build(StatusCode::OK)
         .content_type(ContentType::plaintext())
-        .body(generate_blog_post(test_post)))
+        .body(generate_blog_post(test_post.to_owned())))
 }
 
 #[get("/contact")]
