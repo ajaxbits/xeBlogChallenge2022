@@ -5,7 +5,8 @@ use actix_web::{
     http::{header::ContentType, StatusCode},
     post, test, web, App, HttpRequest, HttpResponse, HttpServer, Responder,
 };
-use db::Post;
+use db::{Pool, Post};
+use r2d2_sqlite::SqliteConnectionManager;
 use serde::Deserialize;
 use std::{fs, path::Path};
 
@@ -47,12 +48,15 @@ fn generate_blog_post(post: Post) -> String {
 }
 
 #[get("/blog/{date}/{slug}")]
-async fn render_blog_post(req: HttpRequest) -> actix_web::Result<HttpResponse> {
-    let posts = db::get_posts().expect("failed to get posts");
-    let test_post = &posts[0];
+async fn render_blog_post(
+    db: web::Data<Pool>,
+    path: web::Path<(String, String)>,
+) -> actix_web::Result<HttpResponse, actix_web::Error> {
+    let (date, slug) = path.into_inner();
+    let post = db::execute(&db, date, slug).await?;
     Ok(HttpResponse::build(StatusCode::OK)
         .content_type(ContentType::plaintext())
-        .body(generate_blog_post(test_post.to_owned())))
+        .body(generate_blog_post(post.to_owned())))
 }
 
 #[get("/contact")]
@@ -73,14 +77,19 @@ async fn register(form: web::Json<Register>) -> impl Responder {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    HttpServer::new(|| {
+    // Connect to SQLite
+    let manager = SqliteConnectionManager::file("posts.db");
+    let pool = Pool::new(manager).unwrap();
+
+    // Serve app
+    HttpServer::new(move || {
         App::new()
+            // store db pool as Data object
+            .app_data(web::Data::new(pool.clone()))
             .service(index)
             .service(contact)
             .service(blog)
             .service(render_blog_post)
-            .route("/hello", web::get().to(|| async { "Hello World!" }))
-            .route("/register", web::post().to(register))
     })
     .bind(("127.0.0.1", 8080))?
     .run()
