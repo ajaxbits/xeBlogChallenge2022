@@ -1,5 +1,6 @@
 mod db;
 mod templates;
+use actix_files::Files;
 use actix_web::{
     get,
     http::{header::ContentType, StatusCode},
@@ -53,10 +54,13 @@ async fn render_blog_post(
     path: web::Path<(String, String)>,
 ) -> actix_web::Result<HttpResponse, actix_web::Error> {
     let (date, slug) = path.into_inner();
-    let post = db::execute(&db, date, slug).await?;
-    Ok(HttpResponse::build(StatusCode::OK)
-        .content_type(ContentType::plaintext())
-        .body(generate_blog_post(post.to_owned())))
+    let post = db::execute(&db, date, slug).await;
+    match post {
+        Ok(post) => Ok(HttpResponse::build(StatusCode::OK)
+            .content_type(ContentType::plaintext())
+            .body(generate_blog_post(post.to_owned()))),
+        Err(_) => Ok(HttpResponse::NotFound()),
+    }
 }
 
 #[get("/contact")]
@@ -64,15 +68,6 @@ async fn contact(req: HttpRequest) -> actix_web::Result<HttpResponse> {
     Ok(HttpResponse::build(StatusCode::OK)
         .content_type(ContentType::plaintext())
         .body(render_static_html(CONTACT)))
-}
-
-#[derive(Deserialize)]
-struct Register {
-    username: String,
-    country: String,
-}
-async fn register(form: web::Json<Register>) -> impl Responder {
-    format!("hello {} from {}", form.username, form.country)
 }
 
 #[actix_web::main]
@@ -84,12 +79,14 @@ async fn main() -> std::io::Result<()> {
     // Serve app
     HttpServer::new(move || {
         App::new()
+            .wrap(actix_web::middleware::Logger::default())
             // store db pool as Data object
             .app_data(web::Data::new(pool.clone()))
             .service(index)
             .service(contact)
             .service(blog)
             .service(render_blog_post)
+            .service(Files::new("/static", "static").show_files_listing())
     })
     .bind(("127.0.0.1", 8080))?
     .run()

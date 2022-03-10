@@ -41,3 +41,8 @@
     - Started with `rusqlite` and got it to be able to get a vec of posts. 
     - However, I wonder if I want to render these routes dynamically? Like do I want actix to handle this??
     - Going to switch to the example's way, with a connection pool and all of that, since it seems better. More complicated, but better.
+
+## 2022-03-10
+- It's aliveeeeeee
+- Been a struggle recently, so I've not been as verbose lol
+- Decided to 'dynamically' query the posts db when I need to fetch a post. I kind of want to immediatley post something from the post form, and be able to see the route. So I think that's the way. At least for now.
