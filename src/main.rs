@@ -2,15 +2,15 @@ mod admin;
 mod blog;
 mod db;
 mod templates;
-use actix_files::Files;
 use actix_web::{
     get,
     http::{header::ContentType, StatusCode},
-    post, test, web, App, HttpRequest, HttpResponse, HttpServer, Responder,
+    web, App, HttpRequest, HttpResponse, HttpServer,
 };
-use db::{Pool, Post};
+use chrono::NaiveDate;
+use db::Pool;
 use r2d2_sqlite::SqliteConnectionManager;
-use serde::Deserialize;
+use serde::Serialize;
 use std::{fs, path::Path};
 use tinytemplate::TinyTemplate;
 
@@ -25,17 +25,47 @@ fn render_static_html(file_name: &str) -> String {
 }
 
 #[get("/")]
-async fn index(req: HttpRequest) -> HttpResponse {
+async fn index(tt: web::Data<TinyTemplate<'_>>) -> HttpResponse {
+    #[derive(Serialize)]
+    struct Ctx {
+        title: String,
+        content: String,
+    }
+
     HttpResponse::build(StatusCode::OK)
         .content_type(ContentType::html())
-        .body(render_static_html(INDEX))
+        .body(
+            tt.render(
+                "base",
+                &Ctx {
+                    title: String::new(),
+                    content: render_static_html(INDEX),
+                },
+            )
+            .expect("filed to render base template"),
+        )
 }
 
 #[get("/contact")]
-async fn contact(req: HttpRequest) -> actix_web::Result<HttpResponse> {
-    Ok(HttpResponse::build(StatusCode::OK)
+async fn contact(tt: web::Data<TinyTemplate<'_>>) -> HttpResponse {
+    #[derive(Serialize)]
+    struct Ctx {
+        title: String,
+        content: String,
+    }
+
+    HttpResponse::build(StatusCode::OK)
         .content_type(ContentType::html())
-        .body(render_static_html(CONTACT)))
+        .body(
+            tt.render(
+                "base",
+                &Ctx {
+                    title: "Contact".to_string(),
+                    content: render_static_html(CONTACT),
+                },
+            )
+            .expect("filed to render base template"),
+        )
 }
 
 #[actix_web::main]
@@ -47,9 +77,14 @@ async fn main() -> std::io::Result<()> {
     let pool = Pool::new(manager).unwrap();
 
     HttpServer::new(move || {
+        let mut tt = tinytemplate::TinyTemplate::new();
+        tt.add_template("base", BASE)
+            .expect("failed to add base template");
+
         App::new()
             .wrap(actix_web::middleware::Compress::default())
             .wrap(actix_web::middleware::Logger::default())
+            .app_data(web::Data::new(tt))
             .service(index)
             .service(contact)
             .service(
@@ -64,5 +99,6 @@ async fn main() -> std::io::Result<()> {
     .await
 }
 
+static BASE: &str = include_str!("../templates/base.html");
 static ERROR: &str = include_str!("../templates/error.html");
 // static INDEX: &str = include_str!("templates/index.html");

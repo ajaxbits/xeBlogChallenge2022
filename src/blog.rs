@@ -5,22 +5,32 @@ use actix_web::{
     web, HttpResponse,
 };
 use serde::Serialize;
+use serde_json::json;
+use tinytemplate::TinyTemplate;
 
-async fn blog(db: web::Data<Pool>) -> actix_web::Result<HttpResponse> {
+async fn blog(
+    db: web::Data<Pool>,
+    base_tt: web::Data<TinyTemplate<'_>>,
+) -> actix_web::Result<HttpResponse> {
     #[derive(Serialize)]
     struct PostListContext {
         post_list: Vec<Post>,
     }
 
-    let mut tt = tinytemplate::TinyTemplate::new();
     let post_list = db::execute_get_post_index(&db)
         .await
         .expect("Failed to get the posts index");
 
+    let mut tt = TinyTemplate::new();
     tt.add_template("blog_list", BLOG_INDEX).unwrap();
     let body = tt
         .render("blog_list", &PostListContext { post_list })
         .expect("could not put the blog post list into the blog post index page");
+    let ctx = json!({
+        "content": body,
+        "title": "blog"
+    });
+    let body = base_tt.render("base", &ctx).unwrap();
 
     Ok(HttpResponse::build(StatusCode::OK)
         .content_type(ContentType::html())
@@ -37,14 +47,28 @@ fn generate_blog_post(post: Post) -> String {
     ))
 }
 
-async fn render_blog_post(db: web::Data<Pool>, path: web::Path<(String, String)>) -> HttpResponse {
+async fn render_blog_post(
+    db: web::Data<Pool>,
+    base_tt: web::Data<TinyTemplate<'_>>,
+    path: web::Path<(String, String)>,
+) -> HttpResponse {
     // TODO figure out how to get these errors to interact more elegaltly
     let (date, slug) = path.into_inner();
     let post = db::execute_get_post(&db, date, slug).await;
     match post {
-        Ok(post) => HttpResponse::build(StatusCode::OK)
-            .content_type(ContentType::html())
-            .body(generate_blog_post(post.to_owned())),
+        Ok(post) => {
+            let ctx = json!({
+                "content": generate_blog_post(post.clone()),
+                "title": post.title,
+            });
+            let post: String = base_tt
+                .render("base", &ctx)
+                .expect("failed to render base template for blog post");
+
+            HttpResponse::build(StatusCode::OK)
+                .content_type(ContentType::html())
+                .body(post)
+        }
         Err(_) => HttpResponse::build(StatusCode::NOT_FOUND).finish(),
     }
 }
@@ -56,4 +80,3 @@ pub fn blog_config(cfg: &mut web::ServiceConfig) {
 
 static BLOG_POST: &str = include_str!("../templates/blog_post.html");
 static BLOG_INDEX: &str = include_str!("../templates/blog.html");
-static BLOG_LIST_PART: &str = include_str!("../templates/part/blog_post_list_item.html");

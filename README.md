@@ -10,7 +10,7 @@ I will be keeping a [journal of my thoughts here](./JOURNAL.md).
 - [X] An abstract "Post" datatype with a title, publication date, a "URL slug" and content in plain text
 - [ ] A home page at / that describes yourself to the world
 - [ ] A list of blog posts at /blog
-- [ ] Individual blog posts at /blog/{date}/{slug}
+- [X] Individual blog posts at /blog/{date}/{slug}
 - [ ] A /contact page explaining how to contact you
 - [ ] An admin area at /admin/\* that is protected by a username and password
 - [ ] An admin form that lets you create new posts
@@ -34,8 +34,8 @@ I will be keeping a [journal of my thoughts here](./JOURNAL.md).
 - [X] Create a SQLite connection and the posts table
 - [X] Insert a post into your database by hand with the sqlite3 console
 - [X] Wire up a /blog/{date}/{slug} route to show that post
-- [ ] Wire up /blog to show all the posts in the database
-- [-] Make static pages for / and /contact
+- [X] Wire up /blog to show all the posts in the database
+- [X] Make static pages for / and /contact
 - [ ] Choose a templating language and create a base template
 - [ ] Edit all your routes to use that base template
 - [ ] Create the admin login page and a POST route to receive the HTML form and check the username/password against something in the SQLite database, creating a session for the admin panel
