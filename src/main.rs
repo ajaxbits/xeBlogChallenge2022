@@ -41,7 +41,7 @@ async fn blog() -> actix_web::Result<HttpResponse> {
 
 fn generate_blog_post(post: Post) -> String {
     format!(
-        "<h1>{title}</h1><h2>{date}<h2><p>{content}</p>",
+        "<html><h1>{title}</h1><h2>{date}<h2><p>{content}</p></html>",
         title = post.title,
         date = post.date,
         content = post.content
@@ -49,17 +49,14 @@ fn generate_blog_post(post: Post) -> String {
 }
 
 #[get("/blog/{date}/{slug}")]
-async fn render_blog_post(
-    db: web::Data<Pool>,
-    path: web::Path<(String, String)>,
-) -> actix_web::Result<HttpResponse, actix_web::Error> {
+async fn render_blog_post(db: web::Data<Pool>, path: web::Path<(String, String)>) -> HttpResponse {
     let (date, slug) = path.into_inner();
     let post = db::execute(&db, date, slug).await;
     match post {
-        Ok(post) => Ok(HttpResponse::build(StatusCode::OK)
-            .content_type(ContentType::plaintext())
-            .body(generate_blog_post(post.to_owned()))),
-        Err(_) => Ok(HttpResponse::NotFound()),
+        Ok(post) => HttpResponse::build(StatusCode::OK)
+            .content_type(ContentType::html())
+            .body(generate_blog_post(post.to_owned())),
+        Err(_) => HttpResponse::build(StatusCode::NOT_FOUND).finish(),
     }
 }
 
