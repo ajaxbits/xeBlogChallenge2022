@@ -46,3 +46,7 @@
 - It's aliveeeeeee
 - Been a struggle recently, so I've not been as verbose lol
 - Decided to 'dynamically' query the posts db when I need to fetch a post. I kind of want to immediatley post something from the post form, and be able to see the route. So I think that's the way. At least for now.
+
+## 2022-03-11
+- Got the 404 to work for a non-existent post!
+- Also discovered the [`actix_web` documentation](https://actix.rs/docs/), which I'll be using going forward.
