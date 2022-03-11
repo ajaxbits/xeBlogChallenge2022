@@ -1,3 +1,4 @@
+mod admin;
 mod blog;
 mod db;
 mod templates;
@@ -51,6 +52,7 @@ async fn main() -> std::io::Result<()> {
             .service(index)
             .service(contact)
             .service(web::scope("/blog").configure(blog::blog_config))
+            .service(web::scope("/admin").configure(admin::admin_config))
     })
     .bind(("127.0.0.1", 8080))?
     .run()
