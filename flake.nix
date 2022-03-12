@@ -8,9 +8,12 @@
     flake-utils.inputs.nixpkgs.follows = "nixpkgs";
     rust-overlay.url = "github:oxalica/rust-overlay";
     rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
+
+    naersk.url = "github:nix-community/naersk";
+    naersk.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { self, nixpkgs, flake-utils, rust-overlay }:
+  outputs = { self, nixpkgs, flake-utils, rust-overlay, naersk }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         overlays = [ (import rust-overlay) ];
@@ -18,9 +21,40 @@
           inherit system overlays;
         };
         rustEnv = pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.default);
+        naersk-lib = naersk.lib."${system}";
 
       in
       rec {
+        packages.xeBlogChallenge2022 = naersk-lib.buildPackage {
+          pname = "xeBlogChallenge2022";
+          root = ./.;
+          buildInputs = [
+            pkgs.sqlite
+            pkgs.openssl
+          ];
+          doDoc = true;
+          fixupPhase = ''
+            cp -r ./* $out
+          '';
+        };
+        defaultPackage = packages.xeBlogChallenge2022;
+
+        packages.docker =
+          let
+            blog = self.defaultPackage.${system};
+          in
+          pkgs.dockerTools.buildLayeredImage {
+            name = blog.pname;
+            tag = "${self.lastModifiedDate}-${self.shortRev or "dirty"}";
+            contents = [ blog pkgs.sqlite pkgs.bash pkgs.coreutils-full ];
+
+            config = {
+              Cmd = [ "/bin/ajaxbits" ];
+              WorkingDir = "/";
+            };
+          };
+
+
         devShell = pkgs.mkShell {
           buildInputs = with pkgs;
             [
