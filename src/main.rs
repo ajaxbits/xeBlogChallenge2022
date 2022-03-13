@@ -7,6 +7,8 @@ use actix_web::{
     http::{header::ContentType, StatusCode},
     web, App, HttpRequest, HttpResponse, HttpServer,
 };
+use actix_web_httpauth::middleware::HttpAuthentication;
+use admin::admin_validator;
 use chrono::NaiveDate;
 use db::Pool;
 use r2d2_sqlite::SqliteConnectionManager;
@@ -80,6 +82,7 @@ async fn main() -> std::io::Result<()> {
         let mut tt = tinytemplate::TinyTemplate::new();
         tt.add_template("base", BASE)
             .expect("failed to add base template");
+        let admin_auth = HttpAuthentication::basic(admin_validator);
 
         App::new()
             .wrap(actix_web::middleware::Compress::default())
@@ -92,7 +95,11 @@ async fn main() -> std::io::Result<()> {
                     .configure(blog::blog_config)
                     .app_data(web::Data::new(pool.clone())),
             )
-            .service(web::scope("/admin").configure(admin::admin_config))
+            .service(
+                web::scope("/admin")
+                    .wrap(admin_auth)
+                    .configure(admin::admin_config),
+            )
     })
     .bind(("0.0.0.0", 8080))?
     .run()
