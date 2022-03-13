@@ -1,18 +1,23 @@
-use crate::db::{self, Pool, Post};
-use actix_files::Files;
 use actix_web::{
-    get,
     http::{header::ContentType, StatusCode},
-    post, test, web, App, HttpRequest, HttpResponse, HttpServer, Responder,
+    web, HttpResponse,
 };
-use r2d2_sqlite::SqliteConnectionManager;
-use serde::Deserialize;
-use std::{fs, path::Path};
+use serde_json::json;
+use tinytemplate::TinyTemplate;
 
-async fn admin(req: HttpRequest) -> HttpResponse {
-    HttpResponse::Ok().body("admin page")
+async fn admin(base_tt: web::Data<TinyTemplate<'_>>) -> actix_web::Result<HttpResponse> {
+    let ctx = json!({
+        "content": ADMIN_INDEX,
+        "title": "blog"
+    });
+    let body = base_tt.render("base", &ctx).unwrap();
+
+    Ok(HttpResponse::build(StatusCode::OK)
+        .content_type(ContentType::html())
+        .body(body))
 }
-
 pub fn admin_config(cfg: &mut web::ServiceConfig) {
     cfg.route("", web::get().to(admin));
 }
+
+static ADMIN_INDEX: &str = include_str!("../templates/admin.html");
