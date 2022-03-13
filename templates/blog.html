@@ -1,16 +1,11 @@
-<html>
-    <title>Blog</title>
-    <body>
-        <h3>Cool blogs</h3>
-        <ul>
-            {{ for post in post_list }}
-            <li>
-                <a href="/blog/{post.date}/{post.slug}">{post.date} :: {post.title}</a>
-            </li>
-            {{ endfor }}
-        </ul>
-    </body>
-</html>
+<h3>Cool blogs</h3>
+<ul>
+    {{ for post in post_list }}
+    <li>
+        <a href="/blog/{post.date}/{post.slug}">{post.date} :: {post.title}</a>
+    </li>
+    {{ endfor }}
+</ul>
 
 
 
