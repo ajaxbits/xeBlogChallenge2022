@@ -88,8 +88,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(actix_web::middleware::Compress::default())
             .wrap(actix_web::middleware::Logger::default())
             .app_data(web::Data::new(tt))
-            .service(index)
-            .service(contact)
+            .service(services![index, contact])
             .service(
                 web::scope("/blog")
                     .configure(blog::blog_config)
