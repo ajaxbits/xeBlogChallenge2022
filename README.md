@@ -9,6 +9,7 @@ I will be keeping a [journal of my thoughts here](./JOURNAL.md).
 ## TODO
 - [X] An abstract "Post" datatype with a title, publication date, a "URL slug" and content in plain text
 - [ ] A home page at / that describes yourself to the world
+    - [ ] Get more granular about this
 - [ ] A list of blog posts at /blog
 - [X] Individual blog posts at /blog/{date}/{slug}
 - [ ] A /contact page explaining how to contact you

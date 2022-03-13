@@ -50,3 +50,9 @@
 ## 2022-03-11
 - Got the 404 to work for a non-existent post!
 - Also discovered the [`actix_web` documentation](https://actix.rs/docs/), which I'll be using going forward.
+
+## 2022-03-13
+- In a great place! Just tested that I can insert another post into the blog db, and that it will show up in the list after a simple refresh! So live insertion of posts will totally be possible!
+- Also, spent a lot of time thinking about deploying with [naersk](https://github.com/nix-community/naersk), but started really spinning my wheels and wasting my time. Not that deployment considerations aren't important -- In fact, that's one of the things I'm most excited about -- but in terms of time management, I feel that I should focus on code first, then deployment.
+    - The upside, though, is that I now can build a working nix package and docker image from that package. So a good start!
+- Time to start working on the admin stuff, which I'm not exactly relishing. Seems like a hard challenge!

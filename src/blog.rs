@@ -26,6 +26,7 @@ async fn blog(
     let body = tt
         .render("blog_list", &PostListContext { post_list })
         .expect("could not put the blog post list into the blog post index page");
+    // TODO these json! calls don't have type information, so try for something better.
     let ctx = json!({
         "content": body,
         "title": "blog"
