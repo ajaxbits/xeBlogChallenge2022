@@ -22,6 +22,10 @@
         rustEnv = pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.default);
         naersk-lib = naersk.lib."${system}";
 
+        start-server = pkgs.writeShellScriptBin "start-server" ''
+          ${pkgs.cargo-watch}/bin/cargo-watch -x 'run'
+        '';
+
       in
       rec {
         packages.xeBlogChallenge2022 = naersk-lib.buildPackage {
@@ -62,8 +66,9 @@
               pkgconfig
               cargo-edit
               cargo-watch
-
               sqlite
+
+              start-server
             ];
         };
       });
