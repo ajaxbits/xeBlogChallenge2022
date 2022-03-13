@@ -1,6 +1,5 @@
 {
   description = "blog submission for Xe's blog challenge 2022 -- used to learn Rust";
-
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
@@ -46,7 +45,7 @@
           pkgs.dockerTools.buildLayeredImage {
             name = blog.pname;
             tag = "${self.lastModifiedDate}-${self.shortRev or "dirty"}";
-            contents = [ blog pkgs.sqlite pkgs.bash pkgs.coreutils-full ];
+            contents = [ blog ];
 
             config = {
               Cmd = [ "/bin/ajaxbits" ];
