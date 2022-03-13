@@ -31,7 +31,7 @@
             pkgs.sqlite
             pkgs.openssl
           ];
-          doDoc = true;
+          # doDoc = true;
           fixupPhase = ''
             cp -r ./* $out
           '';
