@@ -107,5 +107,10 @@ async fn main() -> std::io::Result<()> {
 }
 
 static BASE: &str = include_str!("../templates/base.html");
+#[derive(Serialize, Debug)]
+struct PageCtx {
+    title: String,
+    content: String,
+}
 static ERROR: &str = include_str!("../templates/error.html");
 // static INDEX: &str = include_str!("templates/index.html");
