@@ -2,10 +2,11 @@ mod admin;
 mod blog;
 mod db;
 mod templates;
+use actix_identity::{CookieIdentityPolicy, IdentityService};
 use actix_web::{
     get,
     http::{header::ContentType, StatusCode},
-    web, App, HttpRequest, HttpResponse, HttpServer,
+    services, web, App, HttpRequest, HttpResponse, HttpServer,
 };
 use actix_web_httpauth::middleware::HttpAuthentication;
 use admin::admin_validator;
@@ -83,6 +84,9 @@ async fn main() -> std::io::Result<()> {
         tt.add_template("base", BASE)
             .expect("failed to add base template");
         let admin_auth = HttpAuthentication::basic(admin_validator);
+        let policy = CookieIdentityPolicy::new(&[0; 32])
+            .name("auth-cookie")
+            .secure(false);
 
         App::new()
             .wrap(actix_web::middleware::Compress::default())
@@ -96,7 +100,8 @@ async fn main() -> std::io::Result<()> {
             )
             .service(
                 web::scope("/admin")
-                    .wrap(admin_auth)
+                    // .wrap(admin_auth)
+                    .wrap(IdentityService::new(policy))
                     .configure(admin::admin_config),
             )
     })
