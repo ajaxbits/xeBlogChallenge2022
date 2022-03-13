@@ -58,3 +58,4 @@
 - Time to start working on the admin stuff, which I'm not exactly relishing. Seems like a hard challenge!
 - Going to go with http basic auth for now, but build in a modular way so that I can switch it out if necessary.
 - Also going to start by just fetching plaintext from the db, but I'm sure that's not secure lol
+- Ok, I just discovered [this app](https://github.com/purton-tech/barricade/tree/master/src), which seems to have some good code to ~steal~ borrow from for inspiration.
