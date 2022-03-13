@@ -56,3 +56,5 @@
 - Also, spent a lot of time thinking about deploying with [naersk](https://github.com/nix-community/naersk), but started really spinning my wheels and wasting my time. Not that deployment considerations aren't important -- In fact, that's one of the things I'm most excited about -- but in terms of time management, I feel that I should focus on code first, then deployment.
     - The upside, though, is that I now can build a working nix package and docker image from that package. So a good start!
 - Time to start working on the admin stuff, which I'm not exactly relishing. Seems like a hard challenge!
+- Going to go with http basic auth for now, but build in a modular way so that I can switch it out if necessary.
+- Also going to start by just fetching plaintext from the db, but I'm sure that's not secure lol
