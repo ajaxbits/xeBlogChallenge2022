@@ -15,6 +15,11 @@
   outputs = { self, nixpkgs, flake-utils, rust-overlay, naersk }:
     flake-utils.lib.eachDefaultSystem (system:
       let
+        srcNoTarget = dir:
+          builtins.filterSource
+            (path: type: type != "directory" || builtins.baseNameOf path != "target")
+            dir;
+
         overlays = [ (import rust-overlay) ];
         pkgs = import nixpkgs {
           inherit system overlays;
@@ -26,30 +31,45 @@
           ${pkgs.cargo-watch}/bin/cargo-watch -x 'run'
         '';
 
-      in
-      rec {
-        packages.xeBlogChallenge2022 = naersk-lib.buildPackage {
-          pname = "xeBlogChallenge2022";
-          root = ./.;
+        src = srcNoTarget ./.;
+        blog = naersk-lib.buildPackage {
+          inherit src;
+          name = "xeBlogChallenge2022";
           buildInputs = [
             pkgs.sqlite
             pkgs.openssl
           ];
-          # doDoc = true;
-          fixupPhase = ''
-            cp -r ./* $out
+          remapPathPrefix = true;
+        };
+
+      in
+      rec {
+        packages.xeBlogChallenge2022 = pkgs.stdenv.mkDerivation {
+          inherit (blog) name;
+          inherit src;
+          phases = "installPhase";
+
+          installPhase = ''
+            mkdir -p $out $out/bin
+
+            cp -rf $src/static $out/static
+            cp -rf $src/posts.db $out/posts.db
+            cp -rf $src/templates $out/templates
+
+            cp -rf ${blog}/bin/ajaxbits $out/bin/ajaxbits
           '';
         };
         defaultPackage = packages.xeBlogChallenge2022;
 
         packages.docker =
           let
-            blog = self.defaultPackage.${system};
+            site = self.defaultPackage.${system};
           in
           pkgs.dockerTools.buildLayeredImage {
-            name = blog.pname;
-            tag = "${self.lastModifiedDate}-${self.shortRev or "dirty"}";
-            contents = [ blog ];
+            name = site.name;
+            tag = "develop";
+            # tag = "${self.lastModifiedDate}-${self.shortRev or "dirty"}";
+            contents = [ site ];
 
             config = {
               Cmd = [ "/bin/ajaxbits" ];
