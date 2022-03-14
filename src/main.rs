@@ -1,4 +1,5 @@
 mod admin;
+mod auth;
 mod blog;
 mod db;
 mod templates;
@@ -6,11 +7,10 @@ use actix_identity::{CookieIdentityPolicy, IdentityService};
 use actix_web::{
     get,
     http::{header::ContentType, StatusCode},
-    services, web, App, HttpRequest, HttpResponse, HttpServer,
+    services, web, App, HttpResponse, HttpServer,
 };
 use actix_web_httpauth::middleware::HttpAuthentication;
 use admin::admin_validator;
-use chrono::NaiveDate;
 use db::Pool;
 use r2d2_sqlite::SqliteConnectionManager;
 use serde::Serialize;
@@ -90,7 +90,6 @@ async fn main() -> std::io::Result<()> {
 
         App::new()
             .wrap(actix_web::middleware::Compress::default())
-            .wrap(actix_web::middleware::Logger::default())
             .app_data(web::Data::new(tt))
             .service(services![index, contact])
             .service(
@@ -104,6 +103,7 @@ async fn main() -> std::io::Result<()> {
                     .wrap(IdentityService::new(policy))
                     .configure(admin::admin_config),
             )
+            .wrap(actix_web::middleware::Logger::default())
     })
     .bind(("0.0.0.0", 8080))?
     .run()

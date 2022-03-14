@@ -1,12 +1,21 @@
-use crate::PageCtx;
-use actix_identity::Identity;
+use crate::{
+    auth::{login, logout},
+    PageCtx,
+};
 use actix_web::{
     dev::ServiceRequest,
     http::{header::ContentType, StatusCode},
     web, HttpResponse,
 };
 use actix_web_httpauth::extractors::basic::{BasicAuth, Config};
+use serde::Serialize;
 use tinytemplate::TinyTemplate;
+
+#[derive(Serialize)]
+struct LoginForm {
+    name: String,
+    password: String,
+}
 
 pub async fn admin_validator(
     req: ServiceRequest,
@@ -37,18 +46,6 @@ async fn admin(
             .content_type(ContentType::html())
             .body(body))
     }
-}
-
-async fn login(id: Identity) -> HttpResponse {
-    // remember identity
-    id.remember("User1".to_owned());
-    HttpResponse::Ok().finish()
-}
-
-async fn logout(id: Identity) -> HttpResponse {
-    // remove identity
-    id.forget();
-    HttpResponse::Ok().finish()
 }
 
 pub fn admin_config(cfg: &mut web::ServiceConfig) {
