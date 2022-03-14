@@ -48,6 +48,18 @@ async fn admin(
     }
 }
 
+async fn add() -> HttpResponse {
+    todo!()
+}
+
+async fn edit() -> HttpResponse {
+    todo!()
+}
+
+async fn list() -> HttpResponse {
+    todo!()
+}
+
 pub fn admin_config(cfg: &mut web::ServiceConfig) {
     cfg.app_data(Config::default().realm("Restricted area"))
         .route("", web::get().to(admin))
