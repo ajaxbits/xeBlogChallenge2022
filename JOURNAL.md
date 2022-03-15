@@ -60,3 +60,47 @@
 - Also going to start by just fetching plaintext from the db, but I'm sure that's not secure lol
 - Ok, I just discovered [this app](https://github.com/purton-tech/barricade/tree/master/src), which seems to have some good code to ~steal~ borrow from for inspiration.
 - Also, I think I'm just going to put tha admin auth down for now, and do the admin post form first instead
+
+## 2022-03-14
+- Feeling a little scattered and all over the place. But going to record my recent progress, then do somthing that nobody has ever thought to do before and is sure to place me on the 30 Under 30 list: I'm going to _make a plan_.
+- Recent progress:
+    - Finally figured out how image tagging and everything worked to be able to run my package as docker container on boot on my NixOS server box. Used `virtualisation.oci-containers` to do it. See the `flake.nix` for the docker configuration.
+    - Got a better sense for the landscape of auth and of the `actix_web` crate ecosystem. Going to go with Http Auth for now, since that's what will get me past the MVP stage. However, I _really_ want to make it modular, so I can change it one day if I want to. 
+- Plan:
+    - Going to start on these challenges:
+        ```markdown
+        - [ ] Create a form that lets you create a new post and its associated POST handler
+        - [ ] Create a form that lets you edit an existing post and its associated POST handler
+        ```
+    - Research forms in actix
+        - May require more knowledge of forms in general, we shall see.
+    - Create a post handler that will put that information into the DB.
+    - The two bullets above need to be their own functions, I think.
+- Ok, after that extensive planning session, I feel good to start mocking things up.
+- You know, it would probably be a good idea to have generic `create_post` and `edit_post` functions!
+    - Stealing from [here](https://github.com/actix/examples/blob/master/basics/todo/src/model.rs) today.
+- Wow, ok, two hours later and I'm still messing around with my data models. The above link has some really cool ideas that I'm borrowing that will hopefully make this code a lot easier for me to understand. Leaving it for tonight, but got some good work done, I think!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -37,8 +37,8 @@ I will be keeping a [journal of my thoughts here](./JOURNAL.md).
 - [X] Wire up a /blog/{date}/{slug} route to show that post
 - [X] Wire up /blog to show all the posts in the database
 - [X] Make static pages for / and /contact
-- [ ] Choose a templating language and create a base template
-- [ ] Edit all your routes to use that base template
+- [X] Choose a templating language and create a base template
+- [-] Edit all your routes to use that base template
 - [ ] Create the admin login page and a POST route to receive the HTML form and check the username/password against something in the SQLite database, creating a session for the admin panel
 - [ ] Create an external tool that lets you manually set your username and password
 - [ ] Create an admin view that shows all posts

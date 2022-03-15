@@ -2,6 +2,7 @@ mod admin;
 mod auth;
 mod blog;
 mod db;
+mod model;
 mod templates;
 use actix_identity::{CookieIdentityPolicy, IdentityService};
 use actix_web::{
@@ -11,14 +12,20 @@ use actix_web::{
 };
 use actix_web_httpauth::middleware::HttpAuthentication;
 use admin::admin_validator;
-use db::Pool;
-use r2d2_sqlite::SqliteConnectionManager;
 use serde::Serialize;
-use std::{fs, path::Path};
+use sqlx::{sqlite::SqlitePoolOptions, Pool, Sqlite};
+use std::{any::Any, fs, path::Path};
 use tinytemplate::TinyTemplate;
 
 const INDEX: &str = "static/index.html";
 const CONTACT: &str = "static/contact.html";
+const DATABASE_URL: &str = "posts.db";
+
+#[derive(Serialize, Debug)]
+struct PageCtx {
+    title: String,
+    content: String,
+}
 
 fn render_static_html(file_name: &str) -> String {
     let path = Path::new(file_name);
@@ -29,18 +36,12 @@ fn render_static_html(file_name: &str) -> String {
 
 #[get("/")]
 async fn index(tt: web::Data<TinyTemplate<'_>>) -> HttpResponse {
-    #[derive(Serialize)]
-    struct Ctx {
-        title: String,
-        content: String,
-    }
-
     HttpResponse::build(StatusCode::OK)
         .content_type(ContentType::html())
         .body(
             tt.render(
                 "base",
-                &Ctx {
+                &PageCtx {
                     title: String::new(),
                     content: render_static_html(INDEX),
                 },
@@ -51,18 +52,12 @@ async fn index(tt: web::Data<TinyTemplate<'_>>) -> HttpResponse {
 
 #[get("/contact")]
 async fn contact(tt: web::Data<TinyTemplate<'_>>) -> HttpResponse {
-    #[derive(Serialize)]
-    struct Ctx {
-        title: String,
-        content: String,
-    }
-
     HttpResponse::build(StatusCode::OK)
         .content_type(ContentType::html())
         .body(
             tt.render(
                 "base",
-                &Ctx {
+                &PageCtx {
                     title: "Contact".to_string(),
                     content: render_static_html(CONTACT),
                 },
@@ -76,8 +71,9 @@ async fn main() -> std::io::Result<()> {
     std::env::set_var("RUST_LOG", "actix_web=info");
     env_logger::init();
 
-    let manager = SqliteConnectionManager::file("posts.db");
-    let pool = Pool::new(manager).unwrap();
+    let pool: Pool<Sqlite> = db::init_pool("sqlite://posts.db")
+        .await
+        .expect("had trouble creating the sqlite pool...");
 
     HttpServer::new(move || {
         let mut tt = tinytemplate::TinyTemplate::new();
@@ -111,10 +107,4 @@ async fn main() -> std::io::Result<()> {
 }
 
 static BASE: &str = include_str!("../templates/base.html");
-#[derive(Serialize, Debug)]
-struct PageCtx {
-    title: String,
-    content: String,
-}
 static ERROR: &str = include_str!("../templates/error.html");
-// static INDEX: &str = include_str!("templates/index.html");

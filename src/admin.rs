@@ -5,7 +5,7 @@ use crate::{
 use actix_web::{
     dev::ServiceRequest,
     http::{header::ContentType, StatusCode},
-    web, HttpResponse,
+    web, HttpResponse, HttpResponseBuilder,
 };
 use actix_web_httpauth::extractors::basic::{BasicAuth, Config};
 use serde::Serialize;
@@ -48,11 +48,21 @@ async fn admin(
     }
 }
 
-async fn add() -> HttpResponse {
+/// Adds a post to the post database
+async fn add_post() -> HttpResponseBuilder {
+    HttpResponse::Ok()
+}
+
+/// Serves the "Add Page" form
+async fn add_page() -> HttpResponseBuilder {
+    HttpResponse::Ok()
+}
+
+async fn edit_post() -> HttpResponse {
     todo!()
 }
 
-async fn edit() -> HttpResponse {
+async fn edit_page() -> HttpResponse {
     todo!()
 }
 
@@ -63,7 +73,18 @@ async fn list() -> HttpResponse {
 pub fn admin_config(cfg: &mut web::ServiceConfig) {
     cfg.app_data(Config::default().realm("Restricted area"))
         .route("", web::get().to(admin))
-        .route("login", web::post().to(login))
+        .route("/login", web::post().to(login))
+        .route("/logout", web::post().to(logout))
+        .service(
+            web::resource("/add")
+                .route(web::post().to(add_post))
+                .route(web::get().to(add_page)),
+        )
+        .service(
+            web::resource("/edit")
+                .route(web::post().to(edit_post))
+                .route(web::get().to(edit_page)),
+        )
         .route("logout", web::post().to(logout));
 }
 
