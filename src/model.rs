@@ -31,7 +31,45 @@ impl Post {
         Ok(posts)
     }
 
-    pub async fn update(
+    pub async fn insert(new_post: Post, pool: &SqlitePool) -> Result<(), sqlx::Error> {
+        sqlx::query_as!(
+            Post,
+            r#"
+            INSERT INTO posts
+            VALUES ($1,$2,$3,$4)
+            "#,
+            new_post.title,
+            new_post.date,
+            new_post.slug,
+            new_post.content
+        )
+        .execute(pool)
+        .await?;
+
+        Ok(())
+    }
+
+    pub async fn get(
+        date: chrono::NaiveDate,
+        slug: String,
+        pool: &SqlitePool,
+    ) -> Result<Post, sqlx::Error> {
+        let post = sqlx::query_as!(
+            Post,
+            r#"
+            SELECT title, date as "date!: chrono::NaiveDate", slug, content 
+            FROM posts
+            WHERE date=$1 AND slug=$2
+            "#,
+            date,
+            slug,
+        )
+        .fetch_one(pool)
+        .await?;
+        Ok(post)
+    }
+
+    pub async fn update_with_slug(
         og_post_slug: String,
         new_post: Post,
         pool: &SqlitePool,
@@ -47,24 +85,6 @@ impl Post {
             new_post.slug,
             new_post.content,
             og_post_slug,
-        )
-        .execute(pool)
-        .await?;
-
-        Ok(())
-    }
-
-    pub async fn insert(new_post: Post, pool: &SqlitePool) -> Result<(), sqlx::Error> {
-        sqlx::query_as!(
-            Post,
-            r#"
-            INSERT INTO posts
-            VALUES ($1,$2,$3,$4)
-            "#,
-            new_post.title,
-            new_post.date,
-            new_post.slug,
-            new_post.content
         )
         .execute(pool)
         .await?;

@@ -12,12 +12,6 @@ pub async fn init_pool(database_url: &str) -> Result<SqlitePool, sqlx::Error> {
         .await
 }
 
-pub async fn get_all_posts(pool: &SqlitePool) -> Result<Vec<Post>, &'static str> {
-    Post::all(&pool)
-        .await
-        .map_err(|_| "Error retrieving all tasks")
-}
-
 // const DB_PATH: &str = "./posts.db";
 
 // pub type Pool = r2d2::Pool<r2d2_sqlite::SqliteConnectionManager>;
