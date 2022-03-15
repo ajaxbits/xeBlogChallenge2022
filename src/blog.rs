@@ -1,4 +1,6 @@
-use crate::{db::get_all_posts, model::Post};
+use std::net::ToSocketAddrs;
+
+use crate::{db::get_all_posts, model::Post, PageCtx};
 use actix_web::{
     error, get,
     http::{header::ContentType, StatusCode},
@@ -20,20 +22,21 @@ async fn blog(
 
     let post_list = get_all_posts(&db)
         .await
-        .map_err(error::ErrorInternalServerError)
-        .unwrap();
+        .map_err(error::ErrorInternalServerError)?;
 
     let mut tt = TinyTemplate::new();
-    tt.add_template("blog_list", BLOG_INDEX).unwrap();
+    tt.add_template("blog_list", BLOG_INDEX)
+        .map_err(error::ErrorInternalServerError)?;
     let body = tt
         .render("blog_list", &PostListContext { post_list })
         .expect("could not put the blog post list into the blog post index page");
-    // TODO these json! calls don't have type information, so try for something better.
-    let ctx = json!({
-        "content": body,
-        "title": "blog"
-    });
-    let body = base_tt.render("base", &ctx).unwrap();
+    let ctx = PageCtx {
+        content: body,
+        title: "blog".to_string(),
+    };
+    let body = base_tt
+        .render("base", &ctx)
+        .map_err(error::ErrorInternalServerError)?;
 
     Ok(HttpResponse::build(StatusCode::OK)
         .content_type(ContentType::html())
