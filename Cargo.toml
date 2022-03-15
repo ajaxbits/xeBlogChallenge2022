@@ -12,7 +12,6 @@ actix-session = "0.5"
 actix-web-httpauth = "0.6.0"
 actix-identity = "0.4"
 r2d2 = "0.8"
-# r2d2_sqlite = "0.20"
 sqlx = { version = "0.5.11", features = ["runtime-actix-rustls", "sqlite", "offline", "chrono"] }
 
 pulldown-cmark = "0.8.0"
@@ -26,7 +25,6 @@ chrono = {version = "0.4", features = ["serde"]}
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 color-eyre = "0.5"
-# rusqlite = "0.27.0"
 env_logger = "0.9"
 tinytemplate = "1.2"
 

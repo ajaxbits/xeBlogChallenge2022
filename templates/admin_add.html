@@ -1,5 +1,5 @@
 <h1>Add a post here</h1>
-<form action=/admin/add method=POST>
+<form action="{{if add}}/admin/add{{else}}/admin/edit{{endif}}" method=POST>
     <label>
         Title:
         <input name="title">
