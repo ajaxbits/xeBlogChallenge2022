@@ -1,14 +1,11 @@
-use std::net::ToSocketAddrs;
-
 use crate::{model::Post, PageCtx};
 use actix_web::{
-    error, get,
+    error,
     http::{header::ContentType, StatusCode},
     web, HttpResponse,
 };
 use serde::Serialize;
-use serde_json::json;
-use sqlx::{Pool, Sqlite, SqlitePool};
+use sqlx::SqlitePool;
 use tinytemplate::TinyTemplate;
 
 async fn blog(
