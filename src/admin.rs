@@ -1,5 +1,6 @@
 use crate::{
     auth::{login, logout},
+    model::Post,
     PageCtx,
 };
 use actix_web::{
@@ -49,13 +50,23 @@ async fn admin(
 }
 
 /// Adds a post to the post database
-async fn add_post() -> HttpResponseBuilder {
-    HttpResponse::Ok()
+async fn add_post(params: web::Form<Post>) -> actix_web::Result<HttpResponse> {
+    Ok(HttpResponse::Ok()
+        .content_type("text/plain")
+        .body(format!("your title is {}", params.title)))
 }
 
 /// Serves the "Add Page" form
-async fn add_page() -> HttpResponseBuilder {
-    HttpResponse::Ok()
+async fn add_page(base_tt: web::Data<TinyTemplate<'_>>) -> actix_web::Result<HttpResponse> {
+    let ctx = PageCtx {
+        title: "admin".to_string(),
+        content: include_str!("../templates/admin_add.html").to_string(),
+    };
+    let body = base_tt.render("base", &ctx).unwrap();
+    Ok(HttpResponse::build(StatusCode::OK)
+        .content_type(ContentType::html())
+        .body(body))
+    // HttpResponse::Ok()
 }
 
 async fn edit_post() -> HttpResponse {
