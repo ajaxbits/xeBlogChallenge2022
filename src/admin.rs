@@ -56,7 +56,7 @@ async fn edit_post(
     todo!()
 }
 
-async fn list_posts() -> HttpResponse {
+async fn list_posts() -> actix_web::Result<HttpResponse> {
     todo!()
 }
 
@@ -64,7 +64,6 @@ async fn list_posts() -> HttpResponse {
 pub enum FormMethod {
     Add,
     Edit,
-    List,
 }
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub enum FormMethodError {
@@ -78,7 +77,6 @@ impl FromStr for FormMethod {
         match s {
             "add" => Ok(FormMethod::Add),
             "edit" => Ok(FormMethod::Edit),
-            "list" => Ok(FormMethod::List),
             _ => Err(FormMethodError::NotFound),
         }
     }
@@ -116,7 +114,6 @@ async fn form(
         FormMethod::Edit => tt
             .render("admin", &AdminCtx { add: false })
             .map_err(error::ErrorNotFound),
-        FormMethod::List => todo!(),
     }?;
 
     let ctx = PageCtx {
@@ -147,7 +144,6 @@ async fn form_post(
         FormMethod::Edit => edit_post(params, db)
             .await
             .map_err(error::ErrorInternalServerError)?,
-        FormMethod::List => todo!(),
     };
     Ok(HttpResponse::Ok().finish())
 }
@@ -184,6 +180,7 @@ pub fn admin_config(cfg: &mut web::ServiceConfig) {
                 .route(web::get().to(form))
                 .route(web::post().to(form_post)),
         );
+    // .service(list_posts);
 }
 
 static ADMIN_INDEX: &str = include_str!("../templates/admin.html");
