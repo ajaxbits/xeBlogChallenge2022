@@ -72,9 +72,11 @@
             contents = [ site ];
 
             config = {
-              Cmd = [ "/bin/ajaxbits" ];
+              Cmd = [ "DATABASE_URL=\"sqlite://posts.db\" /bin/ajaxbits" ];
               WorkingDir = "/";
             };
+
+
           };
 
 
