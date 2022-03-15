@@ -7,7 +7,7 @@ use actix_web::{
     dev::ServiceRequest,
     error,
     http::{header::ContentType, StatusCode},
-    web::{self, Data},
+    web::{self, Data, PathConfig},
     HttpResponse, ResponseError,
 };
 use actix_web_httpauth::extractors::basic::{BasicAuth, Config};
@@ -128,33 +128,45 @@ impl ResponseError for FormMethodError {
     }
 }
 
+#[derive(Deserialize, Debug)]
+struct ComplexPath {
+    formmethod: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    date: Option<chrono::NaiveDate>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    slug: Option<String>,
+}
+
 /// Serves the "Add Page" form
 async fn form(
-    path: web::Path<String>,
+    path: web::Path<ComplexPath>,
     base_tt: web::Data<TinyTemplate<'_>>,
-    post_mutex: Data<Mutex<Post>>,
+    db: web::Data<SqlitePool>,
 ) -> actix_web::Result<HttpResponse> {
-    let formmethod = FormMethod::from_str(&path.into_inner())?;
+    println!("{:#?}", path);
+
+    let path = path.into_inner();
+
+    let formmethod = FormMethod::from_str(&path.formmethod).map_err(error::ErrorNotFound)?;
 
     let mut tt = TinyTemplate::new();
     tt.add_template("admin", ADMIN_FORM)
         .expect("failed to add admin template");
 
-    let post = &*post_mutex.lock().unwrap();
-
     let body = match formmethod {
         FormMethod::Add => tt
             .render("admin", &AdminCtx { edit: None })
-            .map_err(error::ErrorNotFound),
-        FormMethod::Edit => tt
-            .render(
-                "admin",
-                &AdminCtx {
-                    edit: Some(post.to_owned()),
-                },
-            )
-            .map_err(error::ErrorNotFound),
-    }?;
+            .map_err(error::ErrorNotFound)?,
+        FormMethod::Edit => {
+            let date = path.date;
+            let slug = path.slug;
+            let post = Post::get(date.unwrap(), slug.unwrap(), &db)
+                .await
+                .map_err(error::ErrorNotFound)?;
+            tt.render("admin", &AdminCtx { edit: Some(post) })
+                .map_err(error::ErrorNotFound)?
+        }
+    };
 
     let ctx = PageCtx {
         title: "add_page".to_string(),
@@ -170,11 +182,14 @@ async fn form(
 }
 
 async fn form_post(
-    path: web::Path<String>,
+    path: web::Path<ComplexPath>,
     params: web::Form<Post>,
     db: web::Data<SqlitePool>,
 ) -> actix_web::Result<HttpResponse> {
-    let formmethod = FormMethod::from_str(&path.into_inner()).map_err(error::ErrorNotFound);
+    println!("{:#?}", path);
+
+    let formmethod =
+        FormMethod::from_str(&path.into_inner().formmethod).map_err(error::ErrorNotFound);
     println!("{:?}", formmethod);
     let formmethod = formmethod?;
     match formmethod {
@@ -225,7 +240,7 @@ pub fn admin_config(cfg: &mut web::ServiceConfig) {
         .service(web::resource("/list").route(web::get().to(list_posts)))
         // .service(web::resource("/edit-post").route(web::get().to(edit_handler)))
         .service(
-            web::resource("/{formmethods}")
+            web::resource(["/{formmethod}", "/{formmethod}/{date}/{slug}"])
                 .route(web::get().to(form))
                 .route(web::post().to(form_post)),
         );
