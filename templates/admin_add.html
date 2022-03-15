@@ -1,5 +1,5 @@
 <h1>Add a post here</h1>
-<form action="{{if edit }}/admin/edit{{else}}/admin/add{{endif}}" method=POST>
+<form action="{{if edit }}/admin/edit/{edit.date}/{edit.slug}{{else}}/admin/add{{endif}}" method=POST>
     <h4>Post Editor</h4>
     <fieldset>
         <legend>edit</legend>

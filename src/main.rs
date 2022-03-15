@@ -11,7 +11,7 @@ use actix_web::{
     services, web, App, HttpResponse, HttpServer,
 };
 use actix_web_httpauth::middleware::HttpAuthentication;
-use admin::admin_validator;
+use auth::admin_validator;
 use serde::Serialize;
 use sqlx::{sqlite::SqlitePoolOptions, Pool, Sqlite};
 use std::{any::Any, fs, path::Path};

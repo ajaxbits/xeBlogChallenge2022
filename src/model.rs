@@ -49,6 +49,25 @@ impl Post {
         Ok(())
     }
 
+    pub async fn delete(post: Post, pool: &SqlitePool) -> Result<(), sqlx::Error> {
+        let test = sqlx::query!(
+            r#"
+            DELETE FROM posts
+            WHERE (title=$1 AND date=$2 AND slug=$3 AND content=$4)
+            "#,
+            post.title,
+            post.date,
+            post.slug,
+            post.content
+        )
+        .execute(pool)
+        .await;
+        println!("{:#?}", test);
+        test?;
+
+        Ok(())
+    }
+
     pub async fn get(
         date: chrono::NaiveDate,
         slug: String,
@@ -66,29 +85,21 @@ impl Post {
         )
         .fetch_one(pool)
         .await?;
+
         Ok(post)
     }
 
     pub async fn update_with_slug(
+        og_post_date: chrono::NaiveDate,
         og_post_slug: String,
         new_post: Post,
         pool: &SqlitePool,
     ) -> Result<(), sqlx::Error> {
-        sqlx::query!(
-            r#"
-            UPDATE posts
-            SET title=$1, date=$2, slug=$3, content=$4
-            WHERE (slug=$6)
-            "#,
-            new_post.title,
-            new_post.date,
-            new_post.slug,
-            new_post.content,
-            og_post_slug,
-        )
-        .execute(pool)
-        .await?;
-
+        let old_post = Post::get(og_post_date, og_post_slug, pool).await;
+        // println!("{:#?}", old_post);
+        let old_post = old_post?;
+        Post::insert(new_post, pool).await?;
+        Post::delete(old_post, pool).await?;
         Ok(())
     }
 }

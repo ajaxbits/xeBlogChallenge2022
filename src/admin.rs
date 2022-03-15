@@ -1,21 +1,54 @@
 use crate::{
     auth::{login, logout},
-    model::{self, Post},
+    model::Post,
     PageCtx,
 };
 use actix_web::{
     dev::ServiceRequest,
     error,
-    http::{header::ContentType, StatusCode},
-    web::{self, Data, PathConfig},
-    HttpResponse, ResponseError,
+    http::{self, header::ContentType, StatusCode},
+    web, HttpResponse, ResponseError,
 };
 use actix_web_httpauth::extractors::basic::{BasicAuth, Config};
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
+use std::fmt;
 use std::str::FromStr;
-use std::{fmt, sync::Mutex};
 use tinytemplate::TinyTemplate;
+
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+pub enum AdminFunction {
+    Add,
+    Edit,
+}
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+pub enum AdminFunctionError {
+    NotFound,
+}
+
+impl FromStr for AdminFunction {
+    type Err = AdminFunctionError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "add" => Ok(AdminFunction::Add),
+            "edit" => Ok(AdminFunction::Edit),
+            _ => Err(AdminFunctionError::NotFound),
+        }
+    }
+}
+impl fmt::Display for AdminFunctionError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Could not find the admin path specified.")
+    }
+}
+impl ResponseError for AdminFunctionError {
+    fn error_response(&self) -> HttpResponse<actix_web::body::BoxBody> {
+        match self {
+            AdminFunctionError::NotFound => HttpResponse::NotFound().finish(),
+        }
+    }
+}
 
 #[derive(Serialize)]
 struct LoginForm {
@@ -28,13 +61,11 @@ struct AdminCtx {
     edit: Option<Post>,
 }
 
-pub async fn admin_validator(
-    req: ServiceRequest,
-    creds: BasicAuth,
-) -> Result<ServiceRequest, actix_web::Error> {
-    println!("{:#?}", creds.user_id());
-    println!("{:#?}", creds.password());
-    Ok(req)
+#[derive(Deserialize, Debug, Clone)]
+struct ComplexPath {
+    formmethod: String,
+    date: Option<chrono::NaiveDate>,
+    slug: Option<String>,
 }
 
 /// Adds a post to the post database
@@ -51,16 +82,19 @@ async fn add_post(
 
 /// Edits an existing post in the database, deleting and replacing
 async fn edit_post(
+    slug: String,
+    date: chrono::NaiveDate,
     params: web::Form<Post>,
     db: web::Data<SqlitePool>,
 ) -> actix_web::Result<HttpResponse> {
-    // delete post
-    // add post
-    todo!()
+    let new_post = params.into_inner();
+    Post::update_with_slug(date, slug, new_post, &db)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+    Ok(HttpResponse::Ok().finish())
 }
 
 async fn list_posts(
-    post_mutex: Data<Mutex<Post>>,
     db: web::Data<SqlitePool>,
     base_tt: web::Data<TinyTemplate<'_>>,
 ) -> actix_web::Result<HttpResponse> {
@@ -92,72 +126,24 @@ async fn list_posts(
         .body(body))
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
-pub enum FormMethod {
-    Add,
-    Edit,
-}
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
-pub enum FormMethodError {
-    NotFound,
-}
-
-impl FromStr for FormMethod {
-    type Err = FormMethodError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "add" => Ok(FormMethod::Add),
-            "edit" => Ok(FormMethod::Edit),
-            _ => Err(FormMethodError::NotFound),
-        }
-    }
-}
-
-impl fmt::Display for FormMethodError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Could not find the admin path specified.")
-    }
-}
-
-impl ResponseError for FormMethodError {
-    fn error_response(&self) -> HttpResponse<actix_web::body::BoxBody> {
-        match self {
-            FormMethodError::NotFound => HttpResponse::NotFound().finish(),
-        }
-    }
-}
-
-#[derive(Deserialize, Debug)]
-struct ComplexPath {
-    formmethod: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    date: Option<chrono::NaiveDate>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    slug: Option<String>,
-}
-
 /// Serves the "Add Page" form
-async fn form(
+async fn form_get(
     path: web::Path<ComplexPath>,
     base_tt: web::Data<TinyTemplate<'_>>,
     db: web::Data<SqlitePool>,
 ) -> actix_web::Result<HttpResponse> {
-    println!("{:#?}", path);
-
     let path = path.into_inner();
-
-    let formmethod = FormMethod::from_str(&path.formmethod).map_err(error::ErrorNotFound)?;
+    let formmethod = AdminFunction::from_str(&path.formmethod).map_err(error::ErrorNotFound)?;
 
     let mut tt = TinyTemplate::new();
     tt.add_template("admin", ADMIN_FORM)
         .expect("failed to add admin template");
 
     let body = match formmethod {
-        FormMethod::Add => tt
+        AdminFunction::Add => tt
             .render("admin", &AdminCtx { edit: None })
             .map_err(error::ErrorNotFound)?,
-        FormMethod::Edit => {
+        AdminFunction::Edit => {
             let date = path.date;
             let slug = path.slug;
             let post = Post::get(date.unwrap(), slug.unwrap(), &db)
@@ -169,10 +155,9 @@ async fn form(
     };
 
     let ctx = PageCtx {
-        title: "add_page".to_string(),
+        title: "admin".to_string(),
         content: body,
     };
-
     let body = base_tt
         .render("base", &ctx)
         .map_err(error::ErrorInternalServerError)?;
@@ -186,21 +171,27 @@ async fn form_post(
     params: web::Form<Post>,
     db: web::Data<SqlitePool>,
 ) -> actix_web::Result<HttpResponse> {
-    println!("{:#?}", path);
-
-    let formmethod =
-        FormMethod::from_str(&path.into_inner().formmethod).map_err(error::ErrorNotFound);
-    println!("{:?}", formmethod);
+    let path = path.into_inner();
+    let formmethod = AdminFunction::from_str(&path.formmethod).map_err(error::ErrorNotFound);
     let formmethod = formmethod?;
     match formmethod {
-        FormMethod::Add => add_post(params, db)
-            .await
-            .map_err(error::ErrorInternalServerError)?,
-        FormMethod::Edit => edit_post(params, db)
-            .await
-            .map_err(error::ErrorInternalServerError)?,
-    };
-    Ok(HttpResponse::Ok().finish())
+        AdminFunction::Add => {
+            add_post(params, db)
+                .await
+                .map_err(error::ErrorInternalServerError)?;
+            Ok(HttpResponse::Ok().finish())
+        }
+        AdminFunction::Edit => {
+            let date = path.date.unwrap();
+            let slug = path.slug.unwrap();
+            edit_post(slug, date, params, db)
+                .await
+                .map_err(error::ErrorInternalServerError)?;
+            Ok(HttpResponse::Found()
+                .append_header((http::header::LOCATION, "/admin/add"))
+                .finish())
+        }
+    }
 }
 
 async fn admin(
@@ -214,7 +205,6 @@ async fn admin(
     let body = base_tt.render("base", &ctx).unwrap();
 
     if let Some(id) = id.identity() {
-        println!("{:#?}", id);
         Ok(HttpResponse::build(StatusCode::OK)
             .content_type(ContentType::html())
             .body("you logged in!"))
@@ -226,22 +216,14 @@ async fn admin(
 }
 
 pub fn admin_config(cfg: &mut web::ServiceConfig) {
-    let post_mutex = Data::new(Mutex::new(Post::new(
-        "title",
-        "2000-01-01",
-        "slug",
-        "content",
-    )));
     cfg.app_data(Config::default().realm("Restricted area"))
         .route("", web::get().to(admin))
         .route("/login", web::post().to(login))
         .route("/logout", web::post().to(logout))
-        .app_data(post_mutex.clone())
         .service(web::resource("/list").route(web::get().to(list_posts)))
-        // .service(web::resource("/edit-post").route(web::get().to(edit_handler)))
         .service(
             web::resource(["/{formmethod}", "/{formmethod}/{date}/{slug}"])
-                .route(web::get().to(form))
+                .route(web::get().to(form_get))
                 .route(web::post().to(form_post)),
         );
 }
