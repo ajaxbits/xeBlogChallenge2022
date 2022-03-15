@@ -85,7 +85,51 @@
 
 ## 2022-03-15
 - Wow, I really went too hard this morning on enums and impl's. Going to take a break, but this is a reminder to myself to journal about this.
+- This is a memorial to some cool code that I spent all day obsessively writing, but think I'm going to trash. Here's the headstone:
+```rust
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+pub enum FormMethod {
+    Add,
+    Edit,
+}
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+pub enum FormMethodError {
+    NotFound,
+}
 
+impl FromStr for FormMethod {
+    type Err = FormMethodError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "add" => Ok(FormMethod::Add),
+            "edit" => Ok(FormMethod::Edit),
+            _ => Err(FormMethodError::NotFound),
+        }
+    }
+}
+
+impl fmt::Display for FormMethodError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Could not find the admin path specified.")
+    }
+}
+
+impl ResponseError for FormMethodError {
+    fn error_response(&self) -> HttpResponse<actix_web::body::BoxBody> {
+        match self {
+            FormMethodError::NotFound => HttpResponse::NotFound().finish(),
+        }
+    }
+}
+```
+- What I learned from this, is that I could take any call to `/admin/*`, create a method that would transform that string into an enum member, then do logic based on that. It was really really cool to be able to write my own type, then neatly tuck everything away inside of an enum, that I could match against very cleanly and prettily. 
+- What was also cool to learn was how to implement a `ResponseError` for my custom error type. I could transform a failed string parse into a `NotFound` error, which is what it would really represent in this case! It was cool to go from the very abstract "I was unable to extract a FromMethod from this string," to the much more contextually-aware statement "It looks like this string isn't one of the allowed strings for this /edit endpoint." All using the type system! Very neat.
+- However, this is causing me intense headaches, since I failed to take into account that someone would, I don't know, want to _pass in a post to the `/edit` endpoint to actually edit it_...
+- Therefore, I think I'm going to scrap this and come up with a new plan.
+    - Fundamentally, I think I'm going to want to call the `/edit/{date}/{slug}` endpoint to edit a given post. Feels more extensible this way.
+    - This seems to be **really** hard to handle with the custom types I defined above. I think I'm just going to have to repeat some code somewhere, and define an `add` function that just takes the db and templates as args, and an `edit` function that takes the db, template, date, and slug as args. I don't really see any other ways to do this right now with my current type system and current skill level.
+- Makes me very sad to see it go, but I'm glad I could at least record my learning here.
 
 
 
