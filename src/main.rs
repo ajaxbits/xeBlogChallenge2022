@@ -96,6 +96,7 @@ async fn main() -> std::io::Result<()> {
                 web::scope("/admin")
                     // .wrap(admin_auth)
                     .wrap(IdentityService::new(policy))
+                    .app_data(web::Data::new(pool.clone()))
                     .configure(admin::admin_config),
             )
             .wrap(actix_web::middleware::Logger::default())

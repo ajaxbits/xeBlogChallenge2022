@@ -5,11 +5,13 @@ use crate::{
 };
 use actix_web::{
     dev::ServiceRequest,
+    error,
     http::{header::ContentType, StatusCode},
     web, HttpResponse, HttpResponseBuilder,
 };
 use actix_web_httpauth::extractors::basic::{BasicAuth, Config};
 use serde::Serialize;
+use sqlx::SqlitePool;
 use tinytemplate::TinyTemplate;
 
 #[derive(Serialize)]
@@ -50,10 +52,15 @@ async fn admin(
 }
 
 /// Adds a post to the post database
-async fn add_post(params: web::Form<Post>) -> actix_web::Result<HttpResponse> {
-    Ok(HttpResponse::Ok()
-        .content_type("text/plain")
-        .body(format!("your title is {}", params.title)))
+async fn add_post(
+    params: web::Form<Post>,
+    db: web::Data<SqlitePool>,
+) -> actix_web::Result<HttpResponse> {
+    let new_post = params.into_inner();
+    Post::insert(new_post, &db)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+    Ok(HttpResponse::Ok().finish())
 }
 
 /// Serves the "Add Page" form
@@ -62,11 +69,12 @@ async fn add_page(base_tt: web::Data<TinyTemplate<'_>>) -> actix_web::Result<Htt
         title: "admin".to_string(),
         content: include_str!("../templates/admin_add.html").to_string(),
     };
-    let body = base_tt.render("base", &ctx).unwrap();
+    let body = base_tt
+        .render("base", &ctx)
+        .map_err(error::ErrorInternalServerError)?;
     Ok(HttpResponse::build(StatusCode::OK)
         .content_type(ContentType::html())
         .body(body))
-    // HttpResponse::Ok()
 }
 
 async fn edit_post() -> HttpResponse {
