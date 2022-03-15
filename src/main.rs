@@ -19,7 +19,6 @@ use tinytemplate::TinyTemplate;
 
 const INDEX: &str = "static/index.html";
 const CONTACT: &str = "static/contact.html";
-const DATABASE_URL: &str = "posts.db";
 
 #[derive(Serialize, Debug)]
 struct PageCtx {
