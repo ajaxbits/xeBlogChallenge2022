@@ -83,6 +83,9 @@
 - One last thing, I'm finally starting to understand `map_err`! I think I can use it to map the error type that is returned from Result into another Error type. I can use this to map the template and sqlx errors in `/blog` to `error::ErrorInternalServerError`s!
     - I'm sure there are a lot of things that will be problematic with this. Like how do we determine how to map errors to another type? Or how do I know the error type I'm mapping to is one that the parent function will "accept"? These are all questions that show my continuing ignorance -- but I feel like I'm making some good progress on this topic!
 
+## 2022-03-15
+- Wow, I really went too hard this morning on enums and impl's. Going to take a break, but this is a reminder to myself to journal about this.
+
 
 
 
