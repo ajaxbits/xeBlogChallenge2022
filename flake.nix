@@ -40,6 +40,7 @@
             pkgs.openssl
           ];
           remapPathPrefix = true;
+          DATABASE_URL = "sqlite://posts.db";
         };
 
       in
@@ -72,7 +73,10 @@
             contents = [ site ];
 
             config = {
-              Cmd = [ "DATABASE_URL=\"sqlite://posts.db\" /bin/ajaxbits" ];
+              Cmd = [
+                "chmod +rw posts.db"
+                "/bin/ajaxbits"
+              ];
               WorkingDir = "/";
             };
 
