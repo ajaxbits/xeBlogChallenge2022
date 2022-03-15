@@ -13,4 +13,10 @@ target/
 ### direnv ###
 .direnv
 # .envrc
+
+### nix ###
 result
+
+### sqlite ###
+*.db-shm
+*.db-wal
