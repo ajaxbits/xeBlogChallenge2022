@@ -1,19 +1,20 @@
 use crate::{
     auth::{login, logout},
-    model::Post,
+    model::{self, Post},
     PageCtx,
 };
 use actix_web::{
     dev::ServiceRequest,
     error,
     http::{header::ContentType, StatusCode},
-    web, HttpResponse, ResponseError,
+    web::{self, Data},
+    HttpResponse, ResponseError,
 };
 use actix_web_httpauth::extractors::basic::{BasicAuth, Config};
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
-use std::fmt;
 use std::str::FromStr;
+use std::{fmt, sync::Mutex};
 use tinytemplate::TinyTemplate;
 
 #[derive(Serialize)]
@@ -24,7 +25,7 @@ struct LoginForm {
 
 #[derive(Serialize)]
 struct AdminCtx {
-    add: bool,
+    edit: Option<Post>,
 }
 
 pub async fn admin_validator(
@@ -53,11 +54,42 @@ async fn edit_post(
     params: web::Form<Post>,
     db: web::Data<SqlitePool>,
 ) -> actix_web::Result<HttpResponse> {
+    // delete post
+    // add post
     todo!()
 }
 
-async fn list_posts() -> actix_web::Result<HttpResponse> {
-    todo!()
+async fn list_posts(
+    post_mutex: Data<Mutex<Post>>,
+    db: web::Data<SqlitePool>,
+    base_tt: web::Data<TinyTemplate<'_>>,
+) -> actix_web::Result<HttpResponse> {
+    #[derive(Serialize)]
+    struct PostListContext {
+        post_list: Vec<Post>,
+    }
+
+    let post_list = Post::all(&db)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let mut tt = TinyTemplate::new();
+    tt.add_template("blog_list", ADMIN_LIST)
+        .map_err(error::ErrorInternalServerError)?;
+    let body = tt
+        .render("blog_list", &PostListContext { post_list })
+        .expect("could not put the blog post list into the blog post index page");
+    let ctx = PageCtx {
+        content: body,
+        title: "blog".to_string(),
+    };
+    let body = base_tt
+        .render("base", &ctx)
+        .map_err(error::ErrorInternalServerError)?;
+
+    Ok(HttpResponse::build(StatusCode::OK)
+        .content_type(ContentType::html())
+        .body(body))
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -100,6 +132,7 @@ impl ResponseError for FormMethodError {
 async fn form(
     path: web::Path<String>,
     base_tt: web::Data<TinyTemplate<'_>>,
+    post_mutex: Data<Mutex<Post>>,
 ) -> actix_web::Result<HttpResponse> {
     let formmethod = FormMethod::from_str(&path.into_inner())?;
 
@@ -107,12 +140,19 @@ async fn form(
     tt.add_template("admin", ADMIN_FORM)
         .expect("failed to add admin template");
 
+    let post = &*post_mutex.lock().unwrap();
+
     let body = match formmethod {
         FormMethod::Add => tt
-            .render("admin", &AdminCtx { add: true })
+            .render("admin", &AdminCtx { edit: None })
             .map_err(error::ErrorNotFound),
         FormMethod::Edit => tt
-            .render("admin", &AdminCtx { add: false })
+            .render(
+                "admin",
+                &AdminCtx {
+                    edit: Some(post.to_owned()),
+                },
+            )
             .map_err(error::ErrorNotFound),
     }?;
 
@@ -171,17 +211,26 @@ async fn admin(
 }
 
 pub fn admin_config(cfg: &mut web::ServiceConfig) {
+    let post_mutex = Data::new(Mutex::new(Post::new(
+        "title",
+        "2000-01-01",
+        "slug",
+        "content",
+    )));
     cfg.app_data(Config::default().realm("Restricted area"))
         .route("", web::get().to(admin))
         .route("/login", web::post().to(login))
         .route("/logout", web::post().to(logout))
+        .app_data(post_mutex.clone())
+        .service(web::resource("/list").route(web::get().to(list_posts)))
+        // .service(web::resource("/edit-post").route(web::get().to(edit_handler)))
         .service(
             web::resource("/{formmethods}")
                 .route(web::get().to(form))
                 .route(web::post().to(form_post)),
         );
-    // .service(list_posts);
 }
 
 static ADMIN_INDEX: &str = include_str!("../templates/admin.html");
+static ADMIN_LIST: &str = include_str!("../templates/admin_list.html");
 static ADMIN_FORM: &str = include_str!("../templates/admin_add.html");

@@ -81,4 +81,4 @@ pub fn blog_config(cfg: &mut web::ServiceConfig) {
 }
 
 static BLOG_POST: &str = include_str!("../templates/blog_post.html");
-static BLOG_INDEX: &str = include_str!("../templates/blog.html");
+pub static BLOG_INDEX: &str = include_str!("../templates/blog.html");

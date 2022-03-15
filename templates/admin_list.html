@@ -1,0 +1,14 @@
+<h3>Pick a blog</h3>
+<ul>
+    {{ for post in post_list }}
+    <li>
+        <strong>{post.date} :: {post.title}</strong>
+        <br>
+        <a href="/edit-post/{post.date}/{post.title}">edit</a>
+        <a href="/delete">delete</a>
+    </li>
+    {{ endfor }}
+</ul>
+
+
+

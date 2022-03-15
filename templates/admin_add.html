@@ -1,20 +1,21 @@
 <h1>Add a post here</h1>
-<form action="{{if add}}/admin/add{{else}}/admin/edit{{endif}}" method=POST>
-    <label>
-        Title:
-        <input name="title">
-    </label>
-    <label>
-        Date:
-        <input name="date" type="date">
-    </label>
-    <label>
-        Slug:
-        <input name="slug">
-    </label>
-    <label>
-        Content:
-        <textarea name="content" rows="5" cols="80"></textarea>
-     </label>
-    <button type=submit>Submit form</button>
+<form action="{{if edit }}/admin/edit{{else}}/admin/add{{endif}}" method=POST>
+    <h4>Post Editor</h4>
+    <fieldset>
+        <legend>edit</legend>
+
+        <label for="title">Title</label>
+        <input name="title" id="title" type="text" {{ if edit}} value="{edit.title}" {{ endif }}>
+
+        <label for="date">Date</label>
+        <input name="date" id="date" type="date" {{ if edit}} value="{edit.date}" {{ endif }}>
+
+        <label for="slug">Slug</label>
+        <input name="slug" id="slug" type="text" {{ if edit}} value="{edit.slug}" {{ endif }}>
+
+        <label for="content">Content</label>
+        <textarea name="content" id="content">{{if edit}} {edit.content} {{ endif }} </textarea>
+
+        <button type=submit>Submit</button>
+    </fieldset>
 </form>
