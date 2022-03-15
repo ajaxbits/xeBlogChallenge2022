@@ -80,6 +80,8 @@
 - You know, it would probably be a good idea to have generic `create_post` and `edit_post` functions!
     - Stealing from [here](https://github.com/actix/examples/blob/master/basics/todo/src/model.rs) today.
 - Wow, ok, two hours later and I'm still messing around with my data models. The above link has some really cool ideas that I'm borrowing that will hopefully make this code a lot easier for me to understand. Leaving it for tonight, but got some good work done, I think!
+- One last thing, I'm finally starting to understand `map_err`! I think I can use it to map the error type that is returned from Result into another Error type. I can use this to map the template and sqlx errors in `/blog` to `error::ErrorInternalServerError`s!
+    - I'm sure there are a lot of things that will be problematic with this. Like how do we determine how to map errors to another type? Or how do I know the error type I'm mapping to is one that the parent function will "accept"? These are all questions that show my continuing ignorance -- but I feel like I'm making some good progress on this topic!
 
 
 
