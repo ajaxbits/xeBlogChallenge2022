@@ -1,10 +1,12 @@
-<h3>Pick a blog</h3>
+<h3>Blogs</h3>
+<a href = "/admin/add">add post</a>
 <ul>
     {{ for post in post_list }}
     <li>
         <strong>{post.date} :: {post.title}</strong>
         <br>
-        <a href="/admin/edit/{post.date}/{post.slug}">edit</a>
+        <a href="/blog/{post.date}/{post.slug}">view</a>
+        <a href="/admin/edit/{post.uuid}">edit</a>
         <a href="/admin/delete/{post.uuid}">delete</a>
     </li>
     {{ endfor }}

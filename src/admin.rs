@@ -61,13 +61,6 @@ struct AdminCtx {
     edit: Option<Post>,
 }
 
-#[derive(Deserialize, Debug, Clone)]
-struct ComplexPath {
-    formmethod: String,
-    date: Option<chrono::NaiveDate>,
-    slug: Option<String>,
-}
-
 /// Adds a post to the post database
 async fn add_post(
     params: web::Form<Post>,
@@ -77,25 +70,32 @@ async fn add_post(
     Post::insert(new_post, &db)
         .await
         .map_err(ErrorInternalServerError)?;
-    Ok(HttpResponse::Ok().finish())
+    Ok(HttpResponse::Found()
+        .append_header((http::header::LOCATION, "/admin"))
+        .finish())
 }
 
 /// Edits an existing post in the database, deleting and replacing
 async fn edit_post(
+    path: web::Path<String>,
     params: web::Form<Post>,
     db: web::Data<SqlitePool>,
 ) -> actix_web::Result<HttpResponse> {
-    let form_fields = params.into_inner();
-    let old_post = Post::get_with_uuid(form_fields.uuid, &db)
+    let og_uuid: String = path.into_inner();
+    let og_uuid: Uuid = Uuid::parse_str(&og_uuid).map_err(ErrorInternalServerError)?;
+    let old_post = Post::get_with_uuid(og_uuid, &db)
         .await
         .map_err(ErrorInternalServerError)?;
-    let new_post = form_fields;
+    let new_post = params.into_inner();
     Post::update(old_post, new_post, &db)
         .await
         .map_err(ErrorInternalServerError)?;
-    Ok(HttpResponse::Ok().finish())
+    Ok(HttpResponse::Found()
+        .append_header((http::header::LOCATION, "/admin"))
+        .finish())
 }
 
+/// Deletes an existing post in the database by uuid
 async fn delete_post(
     params: web::Path<Uuid>,
     db: web::Data<SqlitePool>,
@@ -111,31 +111,46 @@ async fn delete_post(
         .finish())
 }
 
-async fn form_get(
-    path: web::Path<ComplexPath>,
-    base_tt: web::Data<TinyTemplate<'_>>,
-    db: web::Data<SqlitePool>,
-) -> actix_web::Result<HttpResponse> {
-    let path = path.into_inner();
-    let formmethod = AdminFunction::from_str(&path.formmethod).map_err(error::ErrorNotFound)?;
-
+/// Renders the form to add a post
+async fn add_page(base_tt: web::Data<TinyTemplate<'_>>) -> actix_web::Result<HttpResponse> {
     let mut tt = TinyTemplate::new();
     tt.add_template("admin", ADMIN_FORM)
         .expect("failed to add admin template");
 
-    let body = match formmethod {
-        AdminFunction::Add => tt
-            .render("admin", &AdminCtx { edit: None })
-            .map_err(error::ErrorNotFound)?,
-        AdminFunction::Edit => {
-            let date = path.date;
-            let slug = path.slug;
-            let post = Post::get_with_dateslug(date.unwrap(), slug.unwrap(), &db)
-                .await
-                .map_err(error::ErrorNotFound)?;
-            tt.render("admin", &AdminCtx { edit: Some(post) })
-                .map_err(error::ErrorNotFound)?
-        }
+    let body = tt
+        .render("admin", &AdminCtx { edit: None })
+        .map_err(error::ErrorNotFound)?;
+
+    let ctx = PageCtx {
+        title: "add_post".to_string(),
+        content: body,
+    };
+    let body = base_tt
+        .render("base", &ctx)
+        .map_err(ErrorInternalServerError)?;
+    Ok(HttpResponse::build(StatusCode::OK)
+        .content_type(ContentType::html())
+        .body(body))
+}
+
+/// Renders the form to edit a post
+async fn edit_page(
+    path: web::Path<String>,
+    base_tt: web::Data<TinyTemplate<'_>>,
+    db: web::Data<SqlitePool>,
+) -> actix_web::Result<HttpResponse> {
+    let uuid: String = path.into_inner();
+    let uuid: Uuid = Uuid::parse_str(&uuid).map_err(ErrorInternalServerError)?;
+    let mut tt = TinyTemplate::new();
+    tt.add_template("admin", ADMIN_FORM)
+        .expect("failed to add admin template");
+
+    let body = {
+        let post = Post::get_with_uuid(uuid, &db)
+            .await
+            .map_err(error::ErrorNotFound)?;
+        tt.render("admin", &AdminCtx { edit: Some(post) })
+            .map_err(error::ErrorNotFound)?
     };
 
     let ctx = PageCtx {
@@ -150,31 +165,7 @@ async fn form_get(
         .body(body))
 }
 
-async fn form_post(
-    path: web::Path<ComplexPath>,
-    params: web::Form<Post>,
-    db: web::Data<SqlitePool>,
-) -> actix_web::Result<HttpResponse> {
-    let path = path.into_inner();
-    let formmethod = AdminFunction::from_str(&path.formmethod).map_err(error::ErrorNotFound);
-    let formmethod = formmethod?;
-    match formmethod {
-        AdminFunction::Add => {
-            add_post(params, db)
-                .await
-                .map_err(ErrorInternalServerError)?;
-        }
-        AdminFunction::Edit => {
-            edit_post(params, db)
-                .await
-                .map_err(ErrorInternalServerError)?;
-        }
-    }
-    Ok(HttpResponse::Found()
-        .append_header((http::header::LOCATION, "/admin"))
-        .finish())
-}
-
+/// Renders the list of posts for the admin to view, edit, and delete
 async fn list(
     db: web::Data<SqlitePool>,
     base_tt: web::Data<TinyTemplate<'_>>,
@@ -211,9 +202,14 @@ pub fn admin_config(cfg: &mut web::ServiceConfig) {
         .route("/logout", web::post().to(logout))
         .service(web::resource("/delete/{uuid}").route(web::get().to(delete_post)))
         .service(
-            web::resource(["/{formmethod}", "/{formmethod}/{date}/{slug}"])
-                .route(web::get().to(form_get))
-                .route(web::post().to(form_post)),
+            web::resource("/add")
+                .route(web::get().to(add_page))
+                .route(web::post().to(add_post)),
+        )
+        .service(
+            web::resource("/edit/{uuid}")
+                .route(web::get().to(edit_page))
+                .route(web::post().to(edit_post)),
         );
 }
 

@@ -1,5 +1,5 @@
 <h1>Add a post here</h1>
-<form name="form" action="{{if edit }}/admin/edit/{edit.date}/{edit.slug}{{else}}/admin/add{{endif}}" method=POST>
+<form name="form" action="{{if edit }}/admin/edit/{edit.uuid}{{else}}/admin/add{{endif}}" method=POST>
     <h4>Post Editor</h4>
     <fieldset>
         <legend>edit</legend>
@@ -14,10 +14,6 @@
 
         <label for="content">Content</label>
         <textarea name="content" id="content">{{ if edit }} {edit.content} {{ endif }} </textarea>
-
-        {{ if edit }}
-        <input name="uuid" id="uuid" type="hidden" value="{edit.uuid}">
-        {{ endif }}
 
         <button type=submit>Submit</button>
         {{ if edit }}
