@@ -6,6 +6,8 @@ pub async fn admin_validator(
     req: ServiceRequest,
     creds: BasicAuth,
 ) -> Result<ServiceRequest, actix_web::Error> {
+    println!("{:#?}", creds.user_id());
+    println!("{:#?}", creds.password());
     Ok(req)
 }
 

@@ -4,7 +4,6 @@ mod blog;
 mod db;
 mod model;
 mod templates;
-use actix_identity::{CookieIdentityPolicy, IdentityService};
 use actix_web::{
     get,
     http::{header::ContentType, StatusCode},
@@ -13,8 +12,8 @@ use actix_web::{
 use actix_web_httpauth::middleware::HttpAuthentication;
 use auth::admin_validator;
 use serde::Serialize;
-use sqlx::{sqlite::SqlitePoolOptions, Pool, Sqlite};
-use std::{any::Any, fs, path::Path};
+use sqlx::{Pool, Sqlite};
+use std::{fs, path::Path};
 use tinytemplate::TinyTemplate;
 
 const INDEX: &str = "static/index.html";
@@ -79,9 +78,6 @@ async fn main() -> std::io::Result<()> {
         tt.add_template("base", BASE)
             .expect("failed to add base template");
         let admin_auth = HttpAuthentication::basic(admin_validator);
-        let policy = CookieIdentityPolicy::new(&[0; 32])
-            .name("auth-cookie")
-            .secure(false);
 
         App::new()
             .wrap(actix_web::middleware::Compress::default())
@@ -94,8 +90,11 @@ async fn main() -> std::io::Result<()> {
             )
             .service(
                 web::scope("/admin")
-                    // .wrap(admin_auth)
-                    .wrap(IdentityService::new(policy))
+                    .wrap(HttpAuthentication::basic(auth::admin_validator))
+                    .app_data(
+                        actix_web_httpauth::extractors::basic::Config::default()
+                            .realm("Restricted area"),
+                    )
                     .app_data(web::Data::new(pool.clone()))
                     .configure(admin::admin_config),
             )

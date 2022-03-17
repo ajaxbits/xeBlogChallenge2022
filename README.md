@@ -16,7 +16,7 @@ I will be keeping a [journal of my thoughts here](./JOURNAL.md).
 - [ ] An admin area at /admin/\* that is protected by a username and password
 - [X] An admin form that lets you create new posts
 - [X] An admin form that lets you edit existing posts
-- [ ] An admin form that lets you delete posts
+- [X] An admin form that lets you delete posts
 - [X] An admin view that lets you list all posts
 - [X] Use a CSS theme you like (worst case: pick one at random) to make it look nice
 - [X] HTML templates for the base layout and page details
