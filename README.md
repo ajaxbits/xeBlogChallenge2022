@@ -8,18 +8,18 @@ I will be keeping a [journal of my thoughts here](./JOURNAL.md).
 
 ## TODO
 - [X] An abstract "Post" datatype with a title, publication date, a "URL slug" and content in plain text
-- [ ] A home page at / that describes yourself to the world
+- [-] A home page at / that describes yourself to the world
     - [ ] Get more granular about this
-- [ ] A list of blog posts at /blog
+- [X] A list of blog posts at /blog
 - [X] Individual blog posts at /blog/{date}/{slug}
-- [ ] A /contact page explaining how to contact you
+- [-] A /contact page explaining how to contact you
 - [ ] An admin area at /admin/\* that is protected by a username and password
-- [ ] An admin form that lets you create new posts
-- [ ] An admin form that lets you edit existing posts
+- [X] An admin form that lets you create new posts
+- [X] An admin form that lets you edit existing posts
 - [ ] An admin form that lets you delete posts
-- [ ] An admin view that lets you list all posts
-- [ ] Use a CSS theme you like (worst case: pick one at random) to make it look nice
-- [ ] HTML templates for the base layout and page details
+- [X] An admin view that lets you list all posts
+- [X] Use a CSS theme you like (worst case: pick one at random) to make it look nice
+- [X] HTML templates for the base layout and page details
 
 ### Extra Credit :)
 - [ ] Add an "updated at" date that shows up if the post has been edited

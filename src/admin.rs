@@ -4,12 +4,11 @@ use crate::{
     PageCtx,
 };
 use actix_web::{
-    dev::ServiceRequest,
-    error,
+    error::{self, ErrorInternalServerError},
     http::{self, header::ContentType, StatusCode},
     web, HttpResponse, ResponseError,
 };
-use actix_web_httpauth::extractors::basic::{BasicAuth, Config};
+use actix_web_httpauth::extractors::basic::Config;
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 use std::fmt;
