@@ -58,7 +58,7 @@ async fn render_blog_post(
     let (date, slug) = path.into_inner();
     let date = chrono::NaiveDate::parse_from_str(&date, "%Y-%m-%d")
         .map_err(error::ErrorInternalServerError)?;
-    let post = Post::get(date, slug, &db)
+    let post = Post::get_with_dateslug(date, slug, &db)
         .await
         .map_err(error::ErrorNotFound)?;
 

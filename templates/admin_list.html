@@ -4,8 +4,8 @@
     <li>
         <strong>{post.date} :: {post.title}</strong>
         <br>
-        <a href="/edit-post/{post.date}/{post.title}">edit</a>
-        <a href="/delete">delete</a>
+        <a href="/admin/edit/{post.date}/{post.slug}">edit</a>
+        <a href="/admin/delete/{post.uuid}">delete</a>
     </li>
     {{ endfor }}
 </ul>

@@ -133,6 +133,11 @@ impl ResponseError for FormMethodError {
 
 
 
+- [sqlite uuid reference](https://github.com/launchbadge/sqlx/issues/1083)
+- Figure out a way to store the uuids in the db already as their 16 bit representations
+- Add a way to view posts and add new posts from `/admin`
+- parse slugs added through the form to make sure they'll work
+    - `lol_html`?
 
 
 

@@ -344,6 +344,7 @@ dependencies = [
  "tinytemplate",
  "tokio",
  "tower-http",
+ "uuid",
  "walkdir",
 ]
 
@@ -2030,6 +2031,7 @@ dependencies = [
  "percent-encoding",
  "rustls",
  "serde",
+ "serde_json",
  "sha2 0.9.9",
  "smallvec",
  "sqlformat",
@@ -2038,6 +2040,7 @@ dependencies = [
  "thiserror",
  "tokio-stream",
  "url",
+ "uuid",
  "webpki",
  "webpki-roots",
 ]
@@ -2472,6 +2475,16 @@ dependencies = [
  "idna",
  "matches",
  "percent-encoding",
+]
+
+[[package]]
+name = "uuid"
+version = "0.8.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bc5cf98d8186244414c848017f0e2676b3fcb46807f6668a97dfe67359a3c4b7"
+dependencies = [
+ "getrandom",
+ "serde",
 ]
 
 [[package]]

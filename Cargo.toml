@@ -12,7 +12,9 @@ actix-session = "0.5"
 actix-web-httpauth = "0.6.0"
 actix-identity = "0.4"
 r2d2 = "0.8"
-sqlx = { version = "0.5.11", features = ["runtime-actix-rustls", "sqlite", "offline", "chrono"] }
+sqlx = { version = "0.5.11", features = ["runtime-actix-rustls", "sqlite", "offline", "chrono",
+"uuid", "json"] }
+uuid = { version = "0.8.2", features = ["v4", "serde"] }
 
 pulldown-cmark = "0.8.0"
 hotwatch = "0.4"

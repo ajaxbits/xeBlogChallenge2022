@@ -14,6 +14,7 @@ use sqlx::SqlitePool;
 use std::fmt;
 use std::str::FromStr;
 use tinytemplate::TinyTemplate;
+use uuid::Uuid;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub enum AdminFunction {
@@ -75,57 +76,41 @@ async fn add_post(
     let new_post = params.into_inner();
     Post::insert(new_post, &db)
         .await
-        .map_err(error::ErrorInternalServerError)?;
+        .map_err(ErrorInternalServerError)?;
     Ok(HttpResponse::Ok().finish())
 }
 
 /// Edits an existing post in the database, deleting and replacing
 async fn edit_post(
-    slug: String,
-    date: chrono::NaiveDate,
     params: web::Form<Post>,
     db: web::Data<SqlitePool>,
 ) -> actix_web::Result<HttpResponse> {
-    let new_post = params.into_inner();
-    Post::update_with_slug(date, slug, new_post, &db)
+    let form_fields = params.into_inner();
+    let old_post = Post::get_with_uuid(form_fields.uuid, &db)
         .await
-        .map_err(error::ErrorInternalServerError)?;
+        .map_err(ErrorInternalServerError)?;
+    let new_post = form_fields;
+    Post::update(old_post, new_post, &db)
+        .await
+        .map_err(ErrorInternalServerError)?;
     Ok(HttpResponse::Ok().finish())
 }
 
-async fn list_posts(
+async fn delete_post(
+    params: web::Path<Uuid>,
     db: web::Data<SqlitePool>,
-    base_tt: web::Data<TinyTemplate<'_>>,
 ) -> actix_web::Result<HttpResponse> {
-    #[derive(Serialize)]
-    struct PostListContext {
-        post_list: Vec<Post>,
-    }
-
-    let post_list = Post::all(&db)
+    let old_post = Post::get_with_uuid(params.into_inner(), &db)
         .await
-        .map_err(error::ErrorInternalServerError)?;
-
-    let mut tt = TinyTemplate::new();
-    tt.add_template("blog_list", ADMIN_LIST)
-        .map_err(error::ErrorInternalServerError)?;
-    let body = tt
-        .render("blog_list", &PostListContext { post_list })
-        .expect("could not put the blog post list into the blog post index page");
-    let ctx = PageCtx {
-        content: body,
-        title: "blog".to_string(),
-    };
-    let body = base_tt
-        .render("base", &ctx)
-        .map_err(error::ErrorInternalServerError)?;
-
-    Ok(HttpResponse::build(StatusCode::OK)
-        .content_type(ContentType::html())
-        .body(body))
+        .map_err(ErrorInternalServerError)?;
+    Post::delete(old_post, &db)
+        .await
+        .map_err(ErrorInternalServerError)?;
+    Ok(HttpResponse::Found()
+        .append_header((http::header::LOCATION, "/admin"))
+        .finish())
 }
 
-/// Serves the "Add Page" form
 async fn form_get(
     path: web::Path<ComplexPath>,
     base_tt: web::Data<TinyTemplate<'_>>,
@@ -145,7 +130,7 @@ async fn form_get(
         AdminFunction::Edit => {
             let date = path.date;
             let slug = path.slug;
-            let post = Post::get(date.unwrap(), slug.unwrap(), &db)
+            let post = Post::get_with_dateslug(date.unwrap(), slug.unwrap(), &db)
                 .await
                 .map_err(error::ErrorNotFound)?;
             tt.render("admin", &AdminCtx { edit: Some(post) })
@@ -159,7 +144,7 @@ async fn form_get(
     };
     let body = base_tt
         .render("base", &ctx)
-        .map_err(error::ErrorInternalServerError)?;
+        .map_err(ErrorInternalServerError)?;
     Ok(HttpResponse::build(StatusCode::OK)
         .content_type(ContentType::html())
         .body(body))
@@ -177,49 +162,54 @@ async fn form_post(
         AdminFunction::Add => {
             add_post(params, db)
                 .await
-                .map_err(error::ErrorInternalServerError)?;
-            Ok(HttpResponse::Ok().finish())
+                .map_err(ErrorInternalServerError)?;
         }
         AdminFunction::Edit => {
-            let date = path.date.unwrap();
-            let slug = path.slug.unwrap();
-            edit_post(slug, date, params, db)
+            edit_post(params, db)
                 .await
-                .map_err(error::ErrorInternalServerError)?;
-            Ok(HttpResponse::Found()
-                .append_header((http::header::LOCATION, "/admin/add"))
-                .finish())
+                .map_err(ErrorInternalServerError)?;
         }
     }
+    Ok(HttpResponse::Found()
+        .append_header((http::header::LOCATION, "/admin"))
+        .finish())
 }
 
-async fn admin(
-    id: actix_identity::Identity,
+async fn list(
+    db: web::Data<SqlitePool>,
     base_tt: web::Data<TinyTemplate<'_>>,
 ) -> actix_web::Result<HttpResponse> {
-    let ctx = PageCtx {
-        title: "admin".to_string(),
-        content: ADMIN_INDEX.to_string(),
-    };
-    let body = base_tt.render("base", &ctx).unwrap();
-
-    if let Some(id) = id.identity() {
-        Ok(HttpResponse::build(StatusCode::OK)
-            .content_type(ContentType::html())
-            .body("you logged in!"))
-    } else {
-        Ok(HttpResponse::build(StatusCode::OK)
-            .content_type(ContentType::html())
-            .body(body))
+    #[derive(Serialize)]
+    struct PostListContext {
+        post_list: Vec<Post>,
     }
+    let post_list = Post::all(&db).await.map_err(ErrorInternalServerError)?;
+
+    let mut tt = TinyTemplate::new();
+    tt.add_template("blog_list", ADMIN_LIST)
+        .map_err(ErrorInternalServerError)?;
+    let body = tt
+        .render("blog_list", &PostListContext { post_list })
+        .expect("could not put the blog post list into the blog post index page");
+    let ctx = PageCtx {
+        content: body,
+        title: "blog".to_string(),
+    };
+    let body = base_tt
+        .render("base", &ctx)
+        .map_err(ErrorInternalServerError)?;
+
+    Ok(HttpResponse::build(StatusCode::OK)
+        .content_type(ContentType::html())
+        .body(body))
 }
 
 pub fn admin_config(cfg: &mut web::ServiceConfig) {
     cfg.app_data(Config::default().realm("Restricted area"))
-        .route("", web::get().to(admin))
+        .route("", web::get().to(list))
         .route("/login", web::post().to(login))
         .route("/logout", web::post().to(logout))
-        .service(web::resource("/list").route(web::get().to(list_posts)))
+        .service(web::resource("/delete/{uuid}").route(web::get().to(delete_post)))
         .service(
             web::resource(["/{formmethod}", "/{formmethod}/{date}/{slug}"])
                 .route(web::get().to(form_get))
@@ -227,6 +217,5 @@ pub fn admin_config(cfg: &mut web::ServiceConfig) {
         );
 }
 
-static ADMIN_INDEX: &str = include_str!("../templates/admin.html");
 static ADMIN_LIST: &str = include_str!("../templates/admin_list.html");
 static ADMIN_FORM: &str = include_str!("../templates/admin_add.html");
