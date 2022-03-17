@@ -22,7 +22,7 @@ I will be keeping a [journal of my thoughts here](./JOURNAL.md).
 - [X] HTML templates for the base layout and page details
 
 ### Extra Credit :)
-- [ ] Add an "updated at" date that shows up if the post has been edited
+- [X] Add an "updated at" date that shows up if the post has been edited
 - [ ] Add tags on posts that let users find posts by tag
 - [ ] JSONFeed support
 - [ ] "Draft" posts which aren't visible on the public blog index or feeds, but can be shared by URL

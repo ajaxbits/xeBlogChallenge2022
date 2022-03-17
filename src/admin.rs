@@ -11,44 +11,8 @@ use actix_web::{
 use actix_web_httpauth::extractors::basic::Config;
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
-use std::fmt;
-use std::str::FromStr;
 use tinytemplate::TinyTemplate;
 use uuid::Uuid;
-
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
-pub enum AdminFunction {
-    Add,
-    Edit,
-}
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
-pub enum AdminFunctionError {
-    NotFound,
-}
-
-impl FromStr for AdminFunction {
-    type Err = AdminFunctionError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "add" => Ok(AdminFunction::Add),
-            "edit" => Ok(AdminFunction::Edit),
-            _ => Err(AdminFunctionError::NotFound),
-        }
-    }
-}
-impl fmt::Display for AdminFunctionError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Could not find the admin path specified.")
-    }
-}
-impl ResponseError for AdminFunctionError {
-    fn error_response(&self) -> HttpResponse<actix_web::body::BoxBody> {
-        match self {
-            AdminFunctionError::NotFound => HttpResponse::NotFound().finish(),
-        }
-    }
-}
 
 #[derive(Serialize)]
 struct LoginForm {
