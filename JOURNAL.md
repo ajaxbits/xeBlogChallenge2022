@@ -139,6 +139,11 @@ impl ResponseError for FormMethodError {
 - parse slugs added through the form to make sure they'll work
     - `lol_html`?
 
+- Do I need more than a `u8` for serializing the vector? 
+    - using this example for now:https://github.com/rusqlite/rusqlite with the option u8
+
+- Store true false as 0/1 in sqlite
+    - Using [this](https://github.com/serde-rs/serde/issues/1344) to deserialize the values I get.
 
 
 

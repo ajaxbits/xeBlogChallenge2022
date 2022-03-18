@@ -6,19 +6,45 @@ use uuid::Uuid;
 pub struct Post {
     #[serde(default)]
     pub uuid: Uuid,
+
+    #[serde(default)]
+    #[serde(deserialize_with = "bool_from_int")]
+    pub draft: bool,
+
     pub title: String,
+
     pub date: chrono::NaiveDate,
+
     #[serde(default = "default_to_today")]
     pub updated: chrono::NaiveDate,
+
     pub slug: String,
-    // TODO implement and add to db, store as BLOB
-    // #[serde(default = "Vec::new")]
-    // pub tags: Vec<String>,
+
+    #[serde(default = "Vec::new")]
+    pub tags: Vec<String>,
+
     pub content: Option<String>,
 }
 
 fn default_to_today() -> chrono::NaiveDate {
     chrono::offset::Local::today().naive_local()
+}
+
+/// Used to convert 0 and 1 to false and true, respectively
+fn bool_from_int<'de, D>(deserializer: D) -> Result<bool, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    // let test = 0 as u8;
+    // TODO change back to u8 once you insert it into
+    match i64::deserialize(deserializer)? {
+        0 => Ok(false),
+        1 => Ok(true),
+        other => Err(serde::de::Error::invalid_value(
+            serde::de::Unexpected::Unsigned(other as u64),
+            &"zero or one",
+        )),
+    }
 }
 
 impl Post {
@@ -27,18 +53,35 @@ impl Post {
         Self {
             uuid: Uuid::new_v4(),
             title: title.to_string(),
+            draft: false,
             date: chrono::NaiveDate::parse_from_str(&date, "%Y-%m-%d")
                 .expect("failed to parse date string"),
-            updated: chrono::offset::Local::today().naive_local(),
+            updated: default_to_today(),
             slug: slug.to_string(),
+            tags: Vec::new(),
             content: Some(content.to_string()),
         }
     }
 
     pub async fn all(pool: &SqlitePool) -> Result<Vec<Post>, sqlx::Error> {
+        let mut post = Post::_new("base post", "2000-01-01", "base", "this is the base post");
+        post.tags = ["test"].to_string();
+        Post::insert(pool).await?;
+
         let posts = sqlx::query_as!(
             Post,
-            r#"SELECT uuid as "uuid!: uuid::Uuid", title, date as "date!: chrono::NaiveDate", updated as "updated!: chrono::NaiveDate", slug, content FROM posts"#
+            r#"
+            SELECT 
+                uuid as "uuid!: uuid::Uuid", 
+                draft as "draft!: bool", 
+                title, 
+                date as "date!: chrono::NaiveDate", 
+                updated as "updated!: chrono::NaiveDate", 
+                slug, 
+                tags as "tags!: Vec<String>", 
+                content 
+            FROM posts
+            "#
         )
         .fetch_all(pool)
         .await?;
@@ -47,17 +90,20 @@ impl Post {
 
     pub async fn insert(new_post: Post, pool: &SqlitePool) -> Result<(), sqlx::Error> {
         let new_uuid = Uuid::new_v4();
+        let draft = false;
         sqlx::query_as!(
             Post,
             r#"
             INSERT INTO posts
-            VALUES ($1,$2,$3,$4,$5, $6)
+            VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
             "#,
             new_uuid,
+            draft,
             new_post.title,
             new_post.date,
             new_post.updated,
             new_post.slug,
+            new_post.tags,
             new_post.content
         )
         .execute(pool)
@@ -88,7 +134,15 @@ impl Post {
         let post: Post = sqlx::query_as!(
             Post,
             r#"
-            SELECT uuid as "uuid!: uuid::Uuid", title, date as "date!: chrono::NaiveDate", updated as "updated!: chrono::NaiveDate", slug, content
+            SELECT 
+                uuid as "uuid!: uuid::Uuid", 
+                draft as "draft!: bool", 
+                title, 
+                date as "date!: chrono::NaiveDate", 
+                updated as "updated!: chrono::NaiveDate", 
+                slug, 
+                tags, 
+                content 
             FROM posts
             WHERE date=$1 AND slug=$2
             "#,
@@ -105,7 +159,15 @@ impl Post {
         let post: Post = sqlx::query_as!(
             Post,
             r#"
-            SELECT uuid as "uuid!: uuid::Uuid", title, date as "date!: chrono::NaiveDate", updated as "updated!: chrono::NaiveDate", slug, content
+            SELECT 
+                uuid as "uuid!: uuid::Uuid", 
+                draft as "draft!: bool", 
+                title, 
+                date as "date!: chrono::NaiveDate", 
+                updated as "updated!: chrono::NaiveDate", 
+                slug, 
+                tags, 
+                content 
             FROM posts
             WHERE uuid=$1
             "#,
