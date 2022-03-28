@@ -162,4 +162,4 @@ impl ResponseError for FormMethodError {
 
 
 
-
+https://stackoverflow.com/questions/51128832/what-is-the-best-way-to-design-a-tag-based-data-table-with-sqlite
