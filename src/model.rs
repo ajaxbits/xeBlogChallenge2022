@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
-#[derive(Serialize, Clone, Deserialize, Debug)]
+#[derive(sqlx::Type, Serialize, Clone, Deserialize, Debug)]
 pub struct Post {
     #[serde(default)]
     pub uuid: Uuid,
@@ -20,8 +20,7 @@ pub struct Post {
 
     pub slug: String,
 
-    #[serde(default = "Vec::new")]
-    pub tags: Vec<String>,
+    pub tags: String,
 
     pub content: Option<String>,
 }
@@ -58,16 +57,12 @@ impl Post {
                 .expect("failed to parse date string"),
             updated: default_to_today(),
             slug: slug.to_string(),
-            tags: Vec::new(),
+            tags: "[]".to_string(),
             content: Some(content.to_string()),
         }
     }
 
     pub async fn all(pool: &SqlitePool) -> Result<Vec<Post>, sqlx::Error> {
-        let mut post = Post::_new("base post", "2000-01-01", "base", "this is the base post");
-        post.tags = ["test"].to_string();
-        Post::insert(pool).await?;
-
         let posts = sqlx::query_as!(
             Post,
             r#"
@@ -78,7 +73,7 @@ impl Post {
                 date as "date!: chrono::NaiveDate", 
                 updated as "updated!: chrono::NaiveDate", 
                 slug, 
-                tags as "tags!: Vec<String>", 
+                tags, 
                 content 
             FROM posts
             "#
@@ -141,7 +136,7 @@ impl Post {
                 date as "date!: chrono::NaiveDate", 
                 updated as "updated!: chrono::NaiveDate", 
                 slug, 
-                tags, 
+                tags,
                 content 
             FROM posts
             WHERE date=$1 AND slug=$2
@@ -166,7 +161,7 @@ impl Post {
                 date as "date!: chrono::NaiveDate", 
                 updated as "updated!: chrono::NaiveDate", 
                 slug, 
-                tags, 
+                tags,
                 content 
             FROM posts
             WHERE uuid=$1
