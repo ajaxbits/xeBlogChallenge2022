@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
-#[derive(sqlx::Type, Serialize, Clone, Deserialize, Debug)]
+#[derive(Serialize, Clone, Deserialize, Debug)]
 pub struct Post {
     #[serde(default)]
     pub uuid: Uuid,
@@ -20,8 +20,25 @@ pub struct Post {
 
     pub slug: String,
 
-    pub tags: String,
+    #[serde(default = "Vec::new")]
+    pub tags: Vec<String>,
 
+    pub content: Option<String>,
+}
+
+#[derive(Serialize, Clone, Deserialize, Debug)]
+struct RawPost {
+    #[serde(default)]
+    pub uuid: Uuid,
+    #[serde(default)]
+    #[serde(deserialize_with = "bool_from_int")]
+    pub draft: bool,
+    pub title: String,
+    pub date: chrono::NaiveDate,
+    #[serde(default = "default_to_today")]
+    pub updated: chrono::NaiveDate,
+    pub slug: String,
+    pub tags: String,
     pub content: Option<String>,
 }
 
@@ -46,6 +63,25 @@ where
     }
 }
 
+impl From<RawPost> for Post {
+    fn from(raw_post: RawPost) -> Self {
+        Post {
+            uuid: raw_post.uuid,
+            draft: raw_post.draft,
+            title: raw_post.title,
+            date: raw_post.date,
+            updated: raw_post.updated,
+            slug: raw_post.slug,
+            tags: raw_post
+                .tags
+                .split(',')
+                .map(|str| str.to_owned())
+                .collect::<Vec<String>>(),
+            content: raw_post.content,
+        }
+    }
+}
+
 impl Post {
     /// a debug method used to create arbitrary posts
     pub fn _new(title: &str, date: &str, slug: &str, content: &str) -> Self {
@@ -57,14 +93,14 @@ impl Post {
                 .expect("failed to parse date string"),
             updated: default_to_today(),
             slug: slug.to_string(),
-            tags: "[]".to_string(),
+            tags: Vec::new(),
             content: Some(content.to_string()),
         }
     }
 
     pub async fn all(pool: &SqlitePool) -> Result<Vec<Post>, sqlx::Error> {
         let posts = sqlx::query_as!(
-            Post,
+            RawPost,
             r#"
             SELECT 
                 uuid as "uuid!: uuid::Uuid", 
@@ -79,15 +115,19 @@ impl Post {
             "#
         )
         .fetch_all(pool)
-        .await?;
+        .await?
+        .into_iter()
+        .map(|raw_post| Post::from(raw_post))
+        .collect();
+
         Ok(posts)
     }
 
     pub async fn insert(new_post: Post, pool: &SqlitePool) -> Result<(), sqlx::Error> {
         let new_uuid = Uuid::new_v4();
+        let tags: String = new_post.tags.into_iter().collect();
         let draft = false;
-        sqlx::query_as!(
-            Post,
+        sqlx::query!(
             r#"
             INSERT INTO posts
             VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
@@ -98,7 +138,7 @@ impl Post {
             new_post.date,
             new_post.updated,
             new_post.slug,
-            new_post.tags,
+            tags,
             new_post.content
         )
         .execute(pool)
@@ -126,9 +166,10 @@ impl Post {
         slug: String,
         pool: &SqlitePool,
     ) -> Result<Post, sqlx::Error> {
-        let post: Post = sqlx::query_as!(
-            Post,
-            r#"
+        let post: Post = Post::from(
+            sqlx::query_as!(
+                RawPost,
+                r#"
             SELECT 
                 uuid as "uuid!: uuid::Uuid", 
                 draft as "draft!: bool", 
@@ -141,19 +182,21 @@ impl Post {
             FROM posts
             WHERE date=$1 AND slug=$2
             "#,
-            date,
-            slug,
-        )
-        .fetch_one(pool)
-        .await?;
+                date,
+                slug,
+            )
+            .fetch_one(pool)
+            .await?,
+        );
 
         Ok(post)
     }
 
     pub async fn get_with_uuid(uuid: Uuid, pool: &SqlitePool) -> Result<Post, sqlx::Error> {
-        let post: Post = sqlx::query_as!(
-            Post,
-            r#"
+        let post = Post::from(
+            sqlx::query_as!(
+                RawPost,
+                r#"
             SELECT 
                 uuid as "uuid!: uuid::Uuid", 
                 draft as "draft!: bool", 
@@ -166,10 +209,11 @@ impl Post {
             FROM posts
             WHERE uuid=$1
             "#,
-            uuid
-        )
-        .fetch_one(pool)
-        .await?;
+                uuid
+            )
+            .fetch_one(pool)
+            .await?,
+        );
 
         Ok(post)
     }
