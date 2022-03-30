@@ -6,10 +6,10 @@ use crate::{
 use actix_web::{
     error::{self, ErrorInternalServerError},
     http::{self, header::ContentType, StatusCode},
-    web, HttpResponse, ResponseError,
+    web, HttpResponse,
 };
 use actix_web_httpauth::extractors::basic::Config;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use sqlx::SqlitePool;
 use tinytemplate::TinyTemplate;
 use uuid::Uuid;
@@ -30,7 +30,7 @@ async fn add_post(
     params: web::Form<Post>,
     db: web::Data<SqlitePool>,
 ) -> actix_web::Result<HttpResponse> {
-    let new_post = params.into_inner();
+    let new_post: Post = params.into_inner();
     Post::insert(new_post, &db)
         .await
         .map_err(ErrorInternalServerError)?;
