@@ -11,12 +11,6 @@ use tinytemplate::TinyTemplate;
 use uuid::Uuid;
 
 #[derive(Serialize)]
-struct LoginForm {
-    name: String,
-    password: String,
-}
-
-#[derive(Serialize)]
 struct AdminCtx {
     edit: Option<Post>,
 }

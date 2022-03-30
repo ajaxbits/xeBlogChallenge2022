@@ -11,6 +11,7 @@ actix-files = "0.6"
 actix-session = "0.5"
 actix-web-httpauth = "0.6.0"
 actix-identity = "0.4"
+jsonwebtoken = "8"
 r2d2 = "0.8"
 sqlx = { version = "0.5.11", features = ["runtime-actix-rustls", "sqlite", "offline", "chrono",
 "uuid", "json"] }
