@@ -1,4 +1,4 @@
-use actix_web::dev::ServiceRequest;
+use actix_web::{dev::ServiceRequest, error::ErrorInternalServerError, web};
 use actix_web_httpauth::extractors::{
     basic::{BasicAuth, Config},
     bearer::BearerAuth,
@@ -147,8 +147,21 @@ pub async fn admin_validator(
         .password()
         .ok_or::<actix_web::Error>(AuthenticationError::from(config.clone()).into())?;
 
-    match user.eq(USER) && pass.eq(PASS) {
+    match validate_creds(user, pass, &db).await? {
         true => Ok(req),
-        false => Err(AuthenticationError::from(config).into()),
+        false => Err(AuthenticationError::from(config.clone()).into()),
+    }
+}
+
+async fn validate_creds(user: &str, pass: &str, db: &SqlitePool) -> actix_web::Result<bool> {
+    let users = User::fetch_all(db)
+        .await
+        .map_err(ErrorInternalServerError)?;
+    match users
+        .into_iter()
+        .find(|u| u.user.eq(user) && u.pass.eq(pass))
+    {
+        Some(_valid_user) => Ok(true),
+        None => Ok(false),
     }
 }
