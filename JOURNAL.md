@@ -163,3 +163,6 @@ impl ResponseError for FormMethodError {
 
 
 https://stackoverflow.com/questions/51128832/what-is-the-best-way-to-design-a-tag-based-data-table-with-sqlite
+
+- Tags are actually really really hard. Like how to store them? How to display them? Lots to think about
+- https://turreta.com/2020/06/07/actix-web-basic-and-bearer-authentication-examples/
