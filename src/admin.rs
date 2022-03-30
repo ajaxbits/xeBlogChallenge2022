@@ -1,8 +1,4 @@
-use crate::{
-    auth::{login, logout},
-    model::Post,
-    PageCtx,
-};
+use crate::{model::Post, PageCtx};
 use actix_web::{
     error::{self, ErrorInternalServerError},
     http::{self, header::ContentType, StatusCode},
@@ -162,8 +158,6 @@ async fn list(
 pub fn admin_config(cfg: &mut web::ServiceConfig) {
     cfg.app_data(Config::default().realm("Restricted area"))
         .route("", web::get().to(list))
-        .route("/login", web::post().to(login))
-        .route("/logout", web::post().to(logout))
         .service(web::resource("/delete/{uuid}").route(web::get().to(delete_post)))
         .service(
             web::resource("/add")
