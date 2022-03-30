@@ -82,20 +82,16 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .wrap(actix_web::middleware::Compress::default())
             .app_data(web::Data::new(tt))
+            .app_data(web::Data::new(pool.clone()))
             .service(services![index, contact])
-            .service(
-                web::scope("/blog")
-                    .configure(blog::blog_config)
-                    .app_data(web::Data::new(pool.clone())),
-            )
+            .service(web::scope("/blog").configure(blog::blog_config))
             .service(
                 web::scope("/admin")
-                    .wrap(HttpAuthentication::basic(auth::admin_validator))
+                    .wrap(admin_auth)
                     .app_data(
                         actix_web_httpauth::extractors::basic::Config::default()
                             .realm("Restricted area"),
                     )
-                    .app_data(web::Data::new(pool.clone()))
                     .configure(admin::admin_config),
             )
             .wrap(actix_web::middleware::Logger::default())

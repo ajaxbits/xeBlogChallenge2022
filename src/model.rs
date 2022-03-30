@@ -29,15 +29,15 @@ pub struct Post {
 
 /// Data structure representing how SQLite sees posts
 #[derive(Serialize, Clone, Deserialize, Debug)]
-pub struct SqlPost {
-    pub uuid: Vec<u8>,
-    pub draft: i64,
-    pub title: String,
-    pub date: String,
-    pub updated: String,
-    pub slug: String,
-    pub tags: String,
-    pub content: Option<String>,
+struct SqlPost {
+    uuid: Vec<u8>,
+    draft: i64,
+    title: String,
+    date: String,
+    updated: String,
+    slug: String,
+    tags: String,
+    content: Option<String>,
 }
 
 /// Helper function, allowing post update to default to today

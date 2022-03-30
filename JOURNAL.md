@@ -166,3 +166,4 @@ https://stackoverflow.com/questions/51128832/what-is-the-best-way-to-design-a-ta
 
 - Tags are actually really really hard. Like how to store them? How to display them? Lots to think about
 - https://turreta.com/2020/06/07/actix-web-basic-and-bearer-authentication-examples/
+- https://auth0.com/blog/build-an-api-in-rust-with-jwt-authentication-using-actix-web/
