@@ -1,4 +1,4 @@
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Deserializer, Serialize};
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
@@ -52,7 +52,6 @@ where
 {
     let raw = String::deserialize(deserializer)?;
     let vec: Vec<&str> = raw.split(',').collect();
-    println!("Inside the deserializer {:#?}", vec);
     let vec: Vec<String> = vec.into_iter().map(|s| s.to_owned()).collect();
 
     Ok(vec)
@@ -60,7 +59,6 @@ where
 
 impl From<SqlPost> for Post {
     fn from(raw_post: SqlPost) -> Self {
-        println!("Inside the from {:#?}", raw_post);
         Post {
             uuid: Uuid::from_slice(&raw_post.uuid).expect("could not parse uuid"),
             title: raw_post.title,

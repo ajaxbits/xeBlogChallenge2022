@@ -45,11 +45,9 @@ async fn blog(
 fn generate_blog_post(post: Post) -> String {
     let mut tt = tinytemplate::TinyTemplate::new();
     let tags_formatter = |value: &serde_json::Value, output: &mut String| {
-        println!("{:#?}", value);
         output.push_str(&serde_json::to_string_pretty(value)?);
         Ok(())
     };
-    println!("{:#?}", post.tags);
 
     tt.add_template(&post.title, BLOG_POST)
         .expect("could not add the blog_post template");
