@@ -5,7 +5,9 @@ use actix_web::{
     web, HttpResponse,
 };
 use serde::Serialize;
+use serde_json::Value;
 use sqlx::SqlitePool;
+use std::fmt::Write;
 use tinytemplate::TinyTemplate;
 
 async fn blog(
@@ -42,8 +44,16 @@ async fn blog(
 
 fn generate_blog_post(post: Post) -> String {
     let mut tt = tinytemplate::TinyTemplate::new();
+    let tags_formatter = |value: &serde_json::Value, output: &mut String| {
+        println!("{:#?}", value);
+        output.push_str(&serde_json::to_string_pretty(value)?);
+        Ok(())
+    };
+    println!("{:#?}", post.tags);
+
     tt.add_template(&post.title, BLOG_POST)
         .expect("could not add the blog_post template");
+    tt.add_formatter("tags_formatter", tags_formatter);
     tt.render(&post.title, &post).expect(&format!(
         "failed to render blog_post template for {}",
         &post.title

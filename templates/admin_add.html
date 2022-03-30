@@ -1,19 +1,28 @@
 <h1>Add a post here</h1>
 <form name="form" action="{{if edit }}/admin/edit/{edit.uuid}{{else}}/admin/add{{endif}}" method=POST>
-    <h4>Post Editor</h4>
     <fieldset>
-        <legend>edit</legend>
+        <legend>post_editor</legend>
         <label for="title">Title</label>
         <input name="title" id="title" type="text" {{ if edit }} value="{edit.title}" {{ endif }}>
 
-        <label for="date">Date</label>
+        <label for="date">Published Date</label>
         <input name="date" id="date" type="date" {{ if edit }} value="{edit.date}" {{ endif }}>
 
         <label for="slug">Slug</label>
         <input name="slug" id="slug" type="text" {{ if edit }} value="{edit.slug}" {{ endif }}>
 
+        <label for="tags">Tags</label>
+        <input name="tags" id="tags" type="text" {{ if edit }} value="{edit.tags}" {{ endif }}>
+
         <label for="content">Content</label>
         <textarea name="content" id="content">{{ if edit }} {edit.content} {{ endif }} </textarea>
+
+        <label>
+            <input name="draft" id="draft" type="checkbox" {{ if edit }} {{ if edit.draft }} checked {{ endif }} {{ endif }}>
+            Draft
+        </label>
+
+        <br>
 
         <button type=submit>Submit</button>
         {{ if edit }}

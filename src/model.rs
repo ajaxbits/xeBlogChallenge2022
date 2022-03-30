@@ -1,7 +1,8 @@
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
+/// Data structure representing the platonic ideal of a post.
 #[derive(Serialize, Clone, Deserialize, Debug)]
 pub struct Post {
     #[serde(default)]
@@ -20,13 +21,15 @@ pub struct Post {
     pub slug: String,
 
     #[serde(default = "Vec::new")]
+    #[serde(deserialize_with = "csv_to_vec")]
     pub tags: Vec<String>,
 
     pub content: Option<String>,
 }
 
+/// Data structure representing how SQLite sees posts
 #[derive(Serialize, Clone, Deserialize, Debug)]
-struct RawPost {
+pub struct SqlPost {
     pub uuid: Vec<u8>,
     pub draft: i64,
     pub title: String,
@@ -37,12 +40,27 @@ struct RawPost {
     pub content: Option<String>,
 }
 
+/// Helper function, allowing post update to default to today
 fn today() -> chrono::NaiveDate {
     chrono::offset::Local::today().naive_local()
 }
 
-impl From<RawPost> for Post {
-    fn from(raw_post: RawPost) -> Self {
+/// Custom deserializer that allows comma separated values to work for tags
+fn csv_to_vec<'de, D>(deserializer: D) -> Result<Vec<String>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let raw = String::deserialize(deserializer)?;
+    let vec: Vec<&str> = raw.split(',').collect();
+    println!("Inside the deserializer {:#?}", vec);
+    let vec: Vec<String> = vec.into_iter().map(|s| s.to_owned()).collect();
+
+    Ok(vec)
+}
+
+impl From<SqlPost> for Post {
+    fn from(raw_post: SqlPost) -> Self {
+        println!("Inside the from {:#?}", raw_post);
         Post {
             uuid: Uuid::from_slice(&raw_post.uuid).expect("could not parse uuid"),
             title: raw_post.title,
@@ -56,7 +74,11 @@ impl From<RawPost> for Post {
             updated: chrono::NaiveDate::parse_from_str(&raw_post.updated, "%Y-%m-%d")
                 .expect("failed to parse date string"),
             slug: raw_post.slug,
-            tags: raw_post.tags.split(',').map(|str| str.to_owned()).collect(),
+            tags: raw_post
+                .tags
+                .split(',')
+                .map(|str| str.to_owned())
+                .collect::<Vec<String>>(),
             content: raw_post.content,
         }
     }
@@ -65,7 +87,7 @@ impl From<RawPost> for Post {
 impl Post {
     pub async fn all(pool: &SqlitePool) -> Result<Vec<Post>, sqlx::Error> {
         let posts = sqlx::query_as!(
-            RawPost,
+            SqlPost,
             r#"
             SELECT 
                 uuid,
@@ -90,7 +112,7 @@ impl Post {
 
     pub async fn insert(new_post: Post, pool: &SqlitePool) -> Result<(), sqlx::Error> {
         let new_uuid = Uuid::new_v4();
-        let tags: String = new_post.tags.into_iter().collect();
+        let tags: String = new_post.tags.join(",");
         let draft = false;
         sqlx::query!(
             r#"
@@ -131,8 +153,11 @@ impl Post {
         slug: String,
         pool: &SqlitePool,
     ) -> Result<Post, sqlx::Error> {
+        //TODO what I really want to do here
+        //is have it so that we can query with the dateslug, find the uuid,
+        //then use get_with_uuid to call it "properly", otherwise return an error
         let post: Post = sqlx::query_as!(
-            RawPost,
+            SqlPost,
             r#"
             SELECT uuid, draft, title, date, updated, slug, tags, content 
             FROM posts
@@ -150,7 +175,7 @@ impl Post {
 
     pub async fn get_with_uuid(uuid: Uuid, pool: &SqlitePool) -> Result<Post, sqlx::Error> {
         let post: Post = sqlx::query_as!(
-            RawPost,
+            SqlPost,
             r#"
             SELECT uuid, draft, title, date, updated, slug, tags, content 
             FROM posts
