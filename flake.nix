@@ -94,6 +94,8 @@
               sqlite
 
               start-server
+
+              flyctl
             ];
         };
       });

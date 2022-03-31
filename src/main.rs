@@ -5,12 +5,17 @@ mod db;
 mod model;
 mod templates;
 use actix_web::{
+    dev::Service as _,
     get,
-    http::{header::ContentType, StatusCode},
-    services, web, App, HttpResponse, HttpServer,
+    http::{
+        header::{ContentType, HeaderName, CONTENT_TYPE, FORWARDED},
+        StatusCode,
+    },
+    middleware, services, web, App, HttpMessage, HttpResponse, HttpServer,
 };
 use actix_web_httpauth::middleware::HttpAuthentication;
 use auth::admin_validator;
+use axum::http::HeaderValue;
 use serde::Serialize;
 use sqlx::{Pool, Sqlite};
 use std::{fs, path::Path};
@@ -44,7 +49,7 @@ async fn index(tt: web::Data<TinyTemplate<'_>>) -> HttpResponse {
                     content: render_static_html(INDEX),
                 },
             )
-            .expect("filed to render base template"),
+            .expect("failed to render base template"),
         )
 }
 
@@ -60,7 +65,7 @@ async fn contact(tt: web::Data<TinyTemplate<'_>>) -> HttpResponse {
                     content: render_static_html(CONTACT),
                 },
             )
-            .expect("filed to render base template"),
+            .expect("failed to render base template"),
         )
 }
 
@@ -81,6 +86,16 @@ async fn main() -> std::io::Result<()> {
 
         App::new()
             .wrap(actix_web::middleware::Compress::default())
+            .wrap_fn(|req, srv| {
+                let fut = srv.call(req);
+                async {
+                    let res = fut.await?;
+                    println!("{:?}", res.headers());
+                    let headers = res.headers().iter().collect::<Vec<_>>();
+                    println!("{:?}", headers);
+                    Ok(res)
+                }
+            })
             .app_data(web::Data::new(tt))
             .app_data(web::Data::new(pool.clone()))
             .service(services![index, contact])
