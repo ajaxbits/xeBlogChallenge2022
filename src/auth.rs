@@ -147,10 +147,15 @@ pub async fn admin_validator(
         .password()
         .ok_or::<actix_web::Error>(AuthenticationError::from(config.clone()).into())?;
 
-    match validate_creds(user, pass, &db).await? {
+    match user.eq(USER) && pass.eq(PASS) {
         true => Ok(req),
         false => Err(AuthenticationError::from(config.clone()).into()),
     }
+
+    // match validate_creds(user, pass, &db).await? {
+    //     true => Ok(req),
+    //     false => Err(AuthenticationError::from(config.clone()).into()),
+    // }
 }
 
 async fn validate_creds(user: &str, pass: &str, db: &SqlitePool) -> actix_web::Result<bool> {

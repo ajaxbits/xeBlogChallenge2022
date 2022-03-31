@@ -74,7 +74,6 @@
 
             config = {
               Cmd = [
-                "chmod +rw posts.db"
                 "/bin/ajaxbits"
               ];
               WorkingDir = "/";
